@@ -1,0 +1,140 @@
+package com.example.data.local
+
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+import com.example.model.Car
+
+@Entity(tableName = "cached_cars")
+data class CarEntity(
+    @PrimaryKey
+    val id: String,
+    val brand: String,
+    val model: String,
+    val variant: String = "",
+    val year: Int,
+    val bodyType: String,
+    val priceUsd: Double,
+    val fuelType: String,
+    val engine: String,
+    val horsepower: Int,
+    val torqueNm: Int,
+    val transmission: String,
+    val drivetrain: String,
+    val topSpeedKmh: Int,
+    val acceleration0to100: Double,
+    val mileage: String,
+    val dimensions: String,
+    val wheelbase: String,
+    val weightKg: Int,
+    val groundClearance: String,
+    val bootSpace: String,
+    val seating: Int,
+    val tyreSize: String,
+    val brakes: String,
+    val suspension: String,
+    val safetyRating: Double = 5.0,
+    val featuresString: String, // Pipe-separated features
+    val imagesString: String,   // Pipe-separated image URLs
+    val description: String,
+    val country: String,
+    val rating: Double = 4.9,
+    val reviewsCount: Int = 120,
+    val isFeatured: Boolean = false,
+    val isTrending: Boolean = false,
+    val isElectric: Boolean = false,
+    val isSupercar: Boolean = false,
+    val isSports: Boolean = false,
+    val isSUV: Boolean = false,
+    val isBudgetFriendly: Boolean = false,
+    val cachedAt: Long = System.currentTimeMillis()
+) {
+    fun toCar(): Car {
+        return Car(
+            id = id,
+            brand = brand,
+            model = model,
+            variant = variant,
+            year = year,
+            bodyType = bodyType,
+            priceUsd = priceUsd,
+            fuelType = fuelType,
+            engine = engine,
+            horsepower = horsepower,
+            torqueNm = torqueNm,
+            transmission = transmission,
+            drivetrain = drivetrain,
+            topSpeedKmh = topSpeedKmh,
+            acceleration0to100 = acceleration0to100,
+            mileage = mileage,
+            dimensions = dimensions,
+            wheelbase = wheelbase,
+            weightKg = weightKg,
+            groundClearance = groundClearance,
+            bootSpace = bootSpace,
+            seating = seating,
+            tyreSize = tyreSize,
+            brakes = brakes,
+            suspension = suspension,
+            safetyRating = safetyRating,
+            features = if (featuresString.isBlank()) emptyList() else featuresString.split("|||"),
+            images = if (imagesString.isBlank()) emptyList() else imagesString.split("|||"),
+            description = description,
+            country = country,
+            rating = rating,
+            reviewsCount = reviewsCount,
+            isFeatured = isFeatured,
+            isTrending = isTrending,
+            isElectric = isElectric,
+            isSupercar = isSupercar,
+            isSports = isSports,
+            isSUV = isSUV,
+            isBudgetFriendly = isBudgetFriendly
+        )
+    }
+
+    companion object {
+        fun fromCar(car: Car): CarEntity {
+            return CarEntity(
+                id = car.id,
+                brand = car.brand,
+                model = car.model,
+                variant = car.variant,
+                year = car.year,
+                bodyType = car.bodyType,
+                priceUsd = car.priceUsd,
+                fuelType = car.fuelType,
+                engine = car.engine,
+                horsepower = car.horsepower,
+                torqueNm = car.torqueNm,
+                transmission = car.transmission,
+                drivetrain = car.drivetrain,
+                topSpeedKmh = car.topSpeedKmh,
+                acceleration0to100 = car.acceleration0to100,
+                mileage = car.mileage,
+                dimensions = car.dimensions,
+                wheelbase = car.wheelbase,
+                weightKg = car.weightKg,
+                groundClearance = car.groundClearance,
+                bootSpace = car.bootSpace,
+                seating = car.seating,
+                tyreSize = car.tyreSize,
+                brakes = car.brakes,
+                suspension = car.suspension,
+                safetyRating = car.safetyRating,
+                featuresString = car.features.joinToString("|||"),
+                imagesString = car.images.joinToString("|||"),
+                description = car.description,
+                country = car.country,
+                rating = car.rating,
+                reviewsCount = car.reviewsCount,
+                isFeatured = car.isFeatured,
+                isTrending = car.isTrending,
+                isElectric = car.isElectric,
+                isSupercar = car.isSupercar,
+                isSports = car.isSports,
+                isSUV = car.isSUV,
+                isBudgetFriendly = car.isBudgetFriendly
+            )
+        }
+    }
+}
