@@ -35,6 +35,7 @@ import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -355,14 +356,27 @@ fun LoginScreen(
                     Spacer(modifier = Modifier.height(16.dp))
 
                     // Social login buttons
+                    val context = androidx.compose.ui.platform.LocalContext.current
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         GlassSecondaryButton(
                             text = "Google",
-                            onClick = onLoginSuccess,
-                            modifier = Modifier.weight(1f)
+                            onClick = {
+                                isLoggingIn = true
+                                viewModel.signInWithGoogle(context) { success, err ->
+                                    isLoggingIn = false
+                                    if (success) {
+                                        onLoginSuccess()
+                                    } else {
+                                        emailError = err ?: "Google authentication failed"
+                                    }
+                                }
+                            },
+                            modifier = Modifier
+                                .weight(1f)
+                                .testTag("login_google_btn")
                         )
                         GlassSecondaryButton(
                             text = "Apple",
@@ -773,6 +787,27 @@ fun SignUpScreen(
                             }
                         },
                         modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    val signupContext = androidx.compose.ui.platform.LocalContext.current
+                    GlassSecondaryButton(
+                        text = "Sign Up with Google",
+                        onClick = {
+                            isSigningUp = true
+                            viewModel.signInWithGoogle(signupContext) { success, err ->
+                                isSigningUp = false
+                                if (success) {
+                                    onSignUpSuccess()
+                                } else {
+                                    emailError = err ?: "Google sign-up failed"
+                                }
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("signup_google_btn")
                     )
 
                 }

@@ -265,11 +265,24 @@ fun CarDetailScreen(
 
                     // Multi-Angle Image Gallery Carousel with Smooth Cinematic Edges
                     val pagerState = rememberPagerState(pageCount = { car.images.size })
+                    // Car Hero Image Pager Container - Smoothed top & bottom edges, no sharp cuts
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 4.dp)
                             .height(310.dp)
-                            .clip(RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp))
+                            .clip(RoundedCornerShape(28.dp))
+                            .border(
+                                width = 1.dp,
+                                brush = Brush.verticalGradient(
+                                    listOf(
+                                        Color.White.copy(alpha = 0.25f),
+                                        Color.Transparent,
+                                        Color.White.copy(alpha = 0.15f)
+                                    )
+                                ),
+                                shape = RoundedCornerShape(28.dp)
+                            )
                     ) {
                         HorizontalPager(
                             state = pagerState,
@@ -295,14 +308,13 @@ fun CarDetailScreen(
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(75.dp)
+                                .height(80.dp)
                                 .align(Alignment.TopCenter)
                                 .background(
                                     brush = Brush.verticalGradient(
                                         colors = listOf(
-                                            Color(0xF005060A),
-                                            Color(0x9905060A),
-                                            Color(0x3305060A),
+                                            Color(0xD905060A),
+                                            Color(0x8005060A),
                                             Color.Transparent
                                         )
                                     )
@@ -313,15 +325,14 @@ fun CarDetailScreen(
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(115.dp)
+                                .height(105.dp)
                                 .align(Alignment.BottomCenter)
                                 .background(
                                     brush = Brush.verticalGradient(
                                         colors = listOf(
                                             Color.Transparent,
-                                            Color(0x4005060A),
-                                            Color(0x9905060A),
-                                            Color(0xF505060A)
+                                            Color(0x6005060A),
+                                            Color(0xE605060A)
                                         )
                                     )
                                 )
@@ -768,13 +779,19 @@ fun CarDetailScreen(
             }
         }
 
-        // Full Screen Lightbox Viewer with Dismiss
+        // Full Screen Lightbox Viewer with ZERO padding (true edge-to-edge full screen)
         if (fullScreenImage != null) {
-            Dialog(onDismissRequest = { fullScreenImage = null }) {
+            Dialog(
+                onDismissRequest = { fullScreenImage = null },
+                properties = DialogProperties(
+                    usePlatformDefaultWidth = false,
+                    decorFitsSystemWindows = false
+                )
+            ) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.95f))
+                        .background(Color.Black)
                         .clickable { fullScreenImage = null },
                     contentAlignment = Alignment.Center
                 ) {
@@ -782,18 +799,193 @@ fun CarDetailScreen(
                         model = fullScreenImage,
                         contentDescription = "Full Screen Car View",
                         contentScale = ContentScale.Fit,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxSize()
                     )
 
-                    GlassIconButton(
-                        icon = Icons.Default.Close,
-                        contentDescription = "Close",
-                        onClick = { fullScreenImage = null },
-                        size = 46.dp,
+                    // Floating Glass Top Header with Title & Close
+                    Row(
                         modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(24.dp)
-                    )
+                            .fillMaxWidth()
+                            .align(Alignment.TopCenter)
+                            .windowInsetsPadding(WindowInsets.statusBars)
+                            .padding(horizontal = 20.dp, vertical = 14.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .liquidGlass(
+                                    shape = CircleShape,
+                                    backgroundColor = Color.Black.copy(alpha = 0.5f),
+                                    borderColor = Color.White.copy(alpha = 0.25f)
+                                )
+                                .padding(horizontal = 16.dp, vertical = 8.dp)
+                        ) {
+                            Text(
+                                text = car.fullName,
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                            )
+                        }
+
+                        GlassIconButton(
+                            icon = Icons.Default.Close,
+                            contentDescription = "Close",
+                            onClick = { fullScreenImage = null },
+                            size = 46.dp,
+                            backgroundColor = Color.Black.copy(alpha = 0.6f),
+                            borderColor = Color.White.copy(alpha = 0.3f)
+                        )
+                    }
+                }
+            }
+        }
+
+        // Glassmorphic Currency Exchange Popup
+        if (showCurrencyDialog) {
+            Dialog(
+                onDismissRequest = { showCurrencyDialog = false },
+                properties = DialogProperties(usePlatformDefaultWidth = false)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.70f))
+                        .clickable { showCurrencyDialog = false },
+                    contentAlignment = Alignment.Center
+                ) {
+                    GlassCard(
+                        modifier = Modifier
+                            .fillMaxWidth(0.92f)
+                            .clickable(enabled = false) {},
+                        shape = RoundedCornerShape(28.dp),
+                        backgroundColor = Color.White.copy(alpha = 0.12f),
+                        borderColor = ElectricBlueLight.copy(alpha = 0.45f)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(22.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column {
+                                    Text(
+                                        text = "Currency Exchange",
+                                        style = MaterialTheme.typography.titleLarge.copy(
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color.White
+                                        )
+                                    )
+                                    Text(
+                                        text = "Live exchange rate prices for ${car.fullName}",
+                                        style = MaterialTheme.typography.bodySmall.copy(
+                                            color = GlassTextSecondary
+                                        )
+                                    )
+                                }
+                                GlassIconButton(
+                                    icon = Icons.Default.Close,
+                                    contentDescription = "Close",
+                                    onClick = { showCurrencyDialog = false },
+                                    size = 36.dp
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            AppCurrency.entries.forEach { curr ->
+                                val isSelected = selectedCurrency == curr
+                                val convertedPrice = curr.formatPrice(car.priceUsd)
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 4.dp)
+                                        .clip(RoundedCornerShape(16.dp))
+                                        .background(
+                                            if (isSelected) ElectricBlue.copy(alpha = 0.24f)
+                                            else Color.White.copy(alpha = 0.06f)
+                                        )
+                                        .border(
+                                            1.dp,
+                                            if (isSelected) ElectricBlueLight else Color.White.copy(alpha = 0.12f),
+                                            RoundedCornerShape(16.dp)
+                                        )
+                                        .clickable {
+                                            viewModel.updateCurrency(curr)
+                                            showCurrencyDialog = false
+                                        }
+                                        .padding(horizontal = 14.dp, vertical = 12.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(34.dp)
+                                                .clip(CircleShape)
+                                                .background(
+                                                    if (isSelected) ElectricBlue else Color.White.copy(alpha = 0.12f)
+                                                ),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                text = curr.symbol,
+                                                style = MaterialTheme.typography.titleMedium.copy(
+                                                    fontWeight = FontWeight.Black,
+                                                    color = Color.White
+                                                )
+                                            )
+                                        }
+                                        Column {
+                                            Text(
+                                                text = curr.label,
+                                                style = MaterialTheme.typography.bodyMedium.copy(
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = Color.White
+                                                )
+                                            )
+                                            Text(
+                                                text = curr.code,
+                                                style = MaterialTheme.typography.bodySmall.copy(
+                                                    color = GlassTextMuted,
+                                                    fontSize = 11.sp
+                                                )
+                                            )
+                                        }
+                                    }
+
+                                    Column(horizontalAlignment = Alignment.End) {
+                                        Text(
+                                            text = convertedPrice,
+                                            style = MaterialTheme.typography.titleSmall.copy(
+                                                fontWeight = FontWeight.Black,
+                                                color = if (isSelected) ElectricBlueLight else Color.White
+                                            )
+                                        )
+                                        if (isSelected) {
+                                            Text(
+                                                text = "Selected",
+                                                style = MaterialTheme.typography.labelSmall.copy(
+                                                    color = WinnerGreen,
+                                                    fontSize = 10.sp,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -847,23 +1039,23 @@ fun LuxurySpecCard(
             .background(
                 brush = Brush.verticalGradient(
                     colors = listOf(
-                        Color.White.copy(alpha = 0.14f),
-                        Color.White.copy(alpha = 0.05f)
+                        Color.White.copy(alpha = 0.16f),
+                        Color.White.copy(alpha = 0.09f)
                     )
                 )
             )
             .background(
                 brush = Brush.radialGradient(
                     colors = glowBrush,
-                    radius = 350f
+                    radius = 380f
                 )
             )
             .border(
                 width = 1.2.dp,
                 brush = Brush.verticalGradient(
                     listOf(
-                        accentColor.copy(alpha = 0.65f),
-                        Color.White.copy(alpha = 0.12f)
+                        accentColor.copy(alpha = 0.70f),
+                        Color.White.copy(alpha = 0.22f)
                     )
                 ),
                 shape = RoundedCornerShape(22.dp)
@@ -1555,16 +1747,37 @@ fun WriteReviewDialog(
     var comment by remember { mutableStateOf("") }
     var rating by remember { mutableStateOf(5.0f) }
 
-    Dialog(onDismissRequest = onDismiss) {
-        GlassCard(
-            modifier = Modifier.fillMaxWidth(0.95f),
-            shape = RoundedCornerShape(26.dp)
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.70f))
+                .clickable(onClick = onDismiss),
+            contentAlignment = Alignment.Center
         ) {
-            Column(modifier = Modifier.padding(22.dp)) {
-                Text(
-                    text = "Review $carName",
-                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
-                )
+            GlassCard(
+                modifier = Modifier
+                    .fillMaxWidth(0.92f)
+                    .clickable(enabled = false) {},
+                shape = RoundedCornerShape(28.dp),
+                backgroundColor = Color.White.copy(alpha = 0.12f),
+                borderColor = ElectricBlueLight.copy(alpha = 0.45f)
+            ) {
+                Column(modifier = Modifier.padding(24.dp)) {
+                    Text(
+                        text = "Write Owner Review",
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    )
+                    Text(
+                        text = "Share verified telemetry & driving impressions for $carName",
+                        style = MaterialTheme.typography.bodySmall.copy(color = GlassTextSecondary)
+                    )
 
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -1624,3 +1837,5 @@ fun WriteReviewDialog(
         }
     }
 }
+}
+

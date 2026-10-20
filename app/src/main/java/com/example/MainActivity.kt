@@ -54,7 +54,6 @@ import com.example.model.Car
 import com.example.ui.components.LiquidNavBar
 import com.example.ui.components.NavTab
 import com.example.ui.components.liquidGlass
-import com.example.ui.screens.AdminCarDialog
 import com.example.ui.screens.BrandScreen
 import com.example.ui.screens.CarDetailScreen
 import com.example.ui.screens.CompareScreen
@@ -104,8 +103,6 @@ fun AutoVerseApp() {
     val currentTab by viewModel.currentTab.collectAsState()
     val userProfile by viewModel.userProfile.collectAsState()
     val snackBarMsg by viewModel.snackBarMessage.collectAsState()
-
-    var showAdminDialog by remember { mutableStateOf(false) }
 
     // Auto-dismiss snackbar after 2.8 seconds
     LaunchedEffect(snackBarMsg) {
@@ -192,7 +189,6 @@ fun AutoVerseApp() {
                             NavTab.PROFILE -> ProfileScreen(
                                 viewModel = viewModel,
                                 onOpenCar = { viewModel.openCarDetail(it) },
-                                onOpenAdmin = { showAdminDialog = true },
                                 onLogout = { viewModel.navigateTo(Screen.Login) }
                             )
                         }
@@ -278,17 +274,6 @@ fun AutoVerseApp() {
                     }
                 }
             }
-        }
-
-        // Admin Publishing Dialog
-        if (showAdminDialog) {
-            AdminCarDialog(
-                onDismiss = { showAdminDialog = false },
-                onSaveCar = { newCar ->
-                    viewModel.addCar(newCar)
-                    showAdminDialog = false
-                }
-            )
         }
     }
 }

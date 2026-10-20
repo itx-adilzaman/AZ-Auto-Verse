@@ -99,6 +99,8 @@ fun HomeScreen(
     val cars by viewModel.cars.collectAsState()
     val brands by viewModel.brands.collectAsState()
     val userProfile by viewModel.userProfile.collectAsState()
+    val automotiveAds by viewModel.automotiveAds.collectAsState()
+    val isNeonConnected by viewModel.isNeonConnected.collectAsState()
 
     var selectedCategory by remember { mutableStateOf("All") }
     val categories = listOf("All", "Supercars", "Electric", "Luxury", "SUVs", "Budget Friendly")
@@ -176,15 +178,42 @@ fun HomeScreen(
                             }
                             Spacer(modifier = Modifier.width(12.dp))
                             Column {
-                                Text(
-                                    text = "Hello, ${userProfile.name.substringBefore(" ")}",
-                                    style = MaterialTheme.typography.titleMedium.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        color = GlassTextPrimary
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        text = "Hello, ${userProfile.name.substringBefore(" ")}",
+                                        style = MaterialTheme.typography.titleMedium.copy(
+                                            fontWeight = FontWeight.Bold,
+                                            color = GlassTextPrimary
+                                        )
                                     )
-                                )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    // Neon Live Indicator
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier
+                                            .clip(CircleShape)
+                                            .background(if (isNeonConnected) WinnerGreen.copy(alpha = 0.15f) else ElectricBlue.copy(alpha = 0.15f))
+                                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(5.dp)
+                                                .clip(CircleShape)
+                                                .background(if (isNeonConnected) WinnerGreen else NeonCyan)
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(
+                                            text = if (isNeonConnected) "Neon DB Live" else "Neon Connecting",
+                                            style = MaterialTheme.typography.labelSmall.copy(
+                                                color = if (isNeonConnected) WinnerGreen else NeonCyan,
+                                                fontSize = 9.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        )
+                                    }
+                                }
                                 Text(
-                                    text = "Explore 30+ Global Marques",
+                                    text = if (userProfile.id.startsWith("google")) "Google Verified • 27 Cars in Neon" else "Explore 30+ Global Marques",
                                     style = MaterialTheme.typography.bodySmall.copy(
                                         color = ElectricBlueLight,
                                         fontSize = 11.sp
@@ -202,8 +231,13 @@ fun HomeScreen(
                                 .clickable { onOpenProfile() }
                                 .testTag("home_avatar_btn")
                         ) {
+                            val homeCtx = androidx.compose.ui.platform.LocalContext.current
                             AsyncImage(
-                                model = userProfile.avatarUrl,
+                                model = coil.request.ImageRequest.Builder(homeCtx)
+                                    .data(userProfile.avatarUrl)
+                                    .crossfade(true)
+                                    .setHeader("User-Agent", "Mozilla/5.0 (Linux; Android 14)")
+                                    .build(),
                                 contentDescription = "Profile",
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier.fillMaxSize()
@@ -338,7 +372,7 @@ fun HomeScreen(
             // Luxury Automotive Ads & Sponsor Carousel
             item {
                 AutomotiveAdsCarousel(
-                    ads = viewModel.automotiveAds,
+                    ads = automotiveAds,
                     onAdClick = { ad ->
                         viewModel.showNotification("Exploring ${ad.sponsorName}: ${ad.headline}")
                     }
@@ -506,149 +540,156 @@ fun HeroFeaturedCard(
     onCompareToggle: () -> Unit,
     onClick: () -> Unit
 ) {
-    Box(
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val heroImageUrl = car.images.firstOrNull()?.takeIf { it.isNotBlank() }
+        ?: "https://images.unsplash.com/photo-1592198084033-aade902d1aae?auto=format&fit=crop&w=1400&q=80"
+
+    Column(
         modifier = Modifier
             .width(320.dp)
-            .height(380.dp)
-            .liquidGlass(
-                shape = RoundedCornerShape(26.dp),
-                backgroundColor = Color.White.copy(alpha = 0.08f)
-            )
+            .clip(RoundedCornerShape(26.dp))
+            .background(Color(0xFF0F131F))
+            .border(1.dp, GlassBorderColor, RoundedCornerShape(26.dp))
             .clickable(onClick = onClick)
     ) {
-        // High-res exterior hero image
-        AsyncImage(
-            model = car.images.firstOrNull(),
-            contentDescription = car.fullName,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize()
-        )
-
-        // Dark gradient overlays
+        // High-res exterior hero image container
         Box(
             modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            Color(0x9905060A),
-                            Color.Transparent,
-                            Color(0xEE05060A)
-                        ),
-                        startY = 0f,
-                        endY = 1000f
-                    )
-                )
-        )
-
-        // Top Badges (Brand + Favorite Button)
-        Row(
-            modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+                .height(210.dp)
+                .background(Color(0xFF080B14))
         ) {
+            AsyncImage(
+                model = coil.request.ImageRequest.Builder(context)
+                    .data(heroImageUrl)
+                    .crossfade(true)
+                    .setHeader("User-Agent", "Mozilla/5.0 (Linux; Android 14)")
+                    .build(),
+                contentDescription = car.fullName,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(RoundedCornerShape(topStart = 26.dp, topEnd = 26.dp))
+            )
+
+            // Subtle gradient overlay at bottom of image
             Box(
                 modifier = Modifier
-                    .liquidGlass(shape = CircleShape, backgroundColor = Color.Black.copy(alpha = 0.4f))
-                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                    .fillMaxWidth()
+                    .height(60.dp)
+                    .align(Alignment.BottomCenter)
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Transparent,
+                                Color(0xFF0F131F)
+                            )
+                        )
+                    )
+            )
+
+            // Top Badges (Brand + Favorite/Compare Buttons)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(14.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
+                Box(
+                    modifier = Modifier
+                        .liquidGlass(shape = CircleShape, backgroundColor = Color.Black.copy(alpha = 0.55f))
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                ) {
+                    Text(
+                        text = "${car.year} • ${car.brand}",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    )
+                }
+
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    GlassIconButton(
+                        icon = Icons.Default.CompareArrows,
+                        contentDescription = "Compare",
+                        onClick = onCompareToggle,
+                        size = 36.dp,
+                        tint = ElectricBlueLight,
+                        backgroundColor = Color.Black.copy(alpha = 0.6f)
+                    )
+
+                    GlassIconButton(
+                        icon = if (isFavorite) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
+                        contentDescription = "Favorite",
+                        onClick = onFavoriteToggle,
+                        size = 36.dp,
+                        tint = if (isFavorite) NeonRed else Color.White,
+                        backgroundColor = Color.Black.copy(alpha = 0.6f)
+                    )
+                }
+            }
+        }
+
+        // Bottom Info Panel
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = car.model,
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        ),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    if (car.variant.isNotBlank()) {
+                        Text(
+                            text = car.variant,
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                color = ElectricBlueLight,
+                                fontSize = 11.sp
+                            ),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+
                 Text(
-                    text = "${car.year} • ${car.brand}",
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        fontWeight = FontWeight.Bold,
+                    text = currency.formatPrice(car.priceUsd),
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Black,
                         color = Color.White
                     )
                 )
             }
 
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                GlassIconButton(
-                    icon = Icons.Default.CompareArrows,
-                    contentDescription = "Compare",
-                    onClick = onCompareToggle,
-                    size = 38.dp,
-                    tint = ElectricBlueLight,
-                    backgroundColor = Color.Black.copy(alpha = 0.5f)
-                )
+            Spacer(modifier = Modifier.height(14.dp))
 
-                GlassIconButton(
-                    icon = if (isFavorite) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
-                    contentDescription = "Favorite",
-                    onClick = onFavoriteToggle,
-                    size = 38.dp,
-                    tint = if (isFavorite) NeonRed else Color.White,
-                    backgroundColor = Color.Black.copy(alpha = 0.5f)
-                )
-            }
-        }
-
-        // Bottom Info Glass Overlay Card
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .align(Alignment.BottomCenter)
-                .padding(14.dp)
-        ) {
-            Box(
+            // Specs pill row
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .liquidGlass(
-                        shape = RoundedCornerShape(20.dp),
-                        backgroundColor = Color(0xCC0E121E)
-                    )
-                    .padding(14.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(Color.White.copy(alpha = 0.05f))
+                    .padding(horizontal = 14.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Column {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = car.model,
-                                style = MaterialTheme.typography.titleMedium.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White
-                                ),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                            if (car.variant.isNotBlank()) {
-                                Text(
-                                    text = car.variant,
-                                    style = MaterialTheme.typography.bodySmall.copy(
-                                        color = ElectricBlueLight,
-                                        fontSize = 11.sp
-                                    ),
-                                    maxLines = 1
-                                )
-                            }
-                        }
-
-                        Text(
-                            text = currency.formatPrice(car.priceUsd),
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                fontWeight = FontWeight.Black,
-                                color = Color.White
-                            )
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    // Key specs bar (0-100, HP, Top Speed)
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        SpecMicro(label = "0-100", value = "${car.acceleration0to100}s")
-                        SpecMicro(label = "POWER", value = "${car.horsepower} HP")
-                        SpecMicro(label = "SPEED", value = "${car.topSpeedKmh} km/h")
-                    }
-                }
+                SpecMicro(label = "0-100", value = "${car.acceleration0to100}s")
+                SpecMicro(label = "POWER", value = "${car.horsepower} HP")
+                SpecMicro(label = "TOP SPEED", value = "${car.topSpeedKmh} km/h")
+                SpecMicro(label = "DRIVE", value = car.drivetrain)
             }
         }
     }
@@ -668,7 +709,7 @@ fun SpecMicro(label: String, value: String) {
         Text(
             text = value,
             style = MaterialTheme.typography.bodySmall.copy(
-                fontSize = 12.sp,
+                fontSize = 11.sp,
                 color = Color.White,
                 fontWeight = FontWeight.SemiBold
             )
@@ -684,48 +725,59 @@ fun CompactCarCard(
     onFavoriteToggle: () -> Unit,
     onClick: () -> Unit
 ) {
-    Box(
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val cardImageUrl = car.images.firstOrNull()?.takeIf { it.isNotBlank() }
+        ?: "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1000&q=80"
+
+    Column(
         modifier = Modifier
             .width(220.dp)
-            .height(260.dp)
-            .liquidGlass(
-                shape = RoundedCornerShape(22.dp),
-                backgroundColor = Color.White.copy(alpha = 0.08f)
-            )
+            .clip(RoundedCornerShape(22.dp))
+            .background(Color(0xFF0F131F))
+            .border(1.dp, GlassBorderColor, RoundedCornerShape(22.dp))
             .clickable(onClick = onClick)
     ) {
-        AsyncImage(
-            model = car.images.firstOrNull(),
-            contentDescription = car.fullName,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(140.dp)
-                .clip(RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp))
-        )
-
-        // Favorite icon top right
+        // Car Image Container
         Box(
             modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(8.dp)
+                .fillMaxWidth()
+                .height(145.dp)
+                .background(Color(0xFF080B14))
         ) {
-            GlassIconButton(
-                icon = if (isFavorite) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
-                contentDescription = null,
-                onClick = onFavoriteToggle,
-                size = 32.dp,
-                tint = if (isFavorite) NeonRed else Color.White,
-                backgroundColor = Color.Black.copy(alpha = 0.5f)
+            AsyncImage(
+                model = coil.request.ImageRequest.Builder(context)
+                    .data(cardImageUrl)
+                    .crossfade(true)
+                    .setHeader("User-Agent", "Mozilla/5.0 (Linux; Android 14)")
+                    .build(),
+                contentDescription = car.fullName,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp))
             )
+
+            // Favorite icon top right
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(8.dp)
+            ) {
+                GlassIconButton(
+                    icon = if (isFavorite) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
+                    contentDescription = null,
+                    onClick = onFavoriteToggle,
+                    size = 32.dp,
+                    tint = if (isFavorite) NeonRed else Color.White,
+                    backgroundColor = Color.Black.copy(alpha = 0.6f)
+                )
+            }
         }
 
         // Info container
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .align(Alignment.BottomCenter)
-                .background(Color(0xE60E121E))
                 .padding(12.dp)
         ) {
             Text(
@@ -746,7 +798,7 @@ fun CompactCarCard(
                 overflow = TextOverflow.Ellipsis
             )
 
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(6.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),

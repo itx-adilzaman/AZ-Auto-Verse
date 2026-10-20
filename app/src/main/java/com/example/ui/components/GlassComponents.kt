@@ -16,11 +16,13 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -68,11 +70,13 @@ import com.example.ui.theme.NeonRed
 
 /**
  * Modifier that applies iOS-like Liquid Glass effect to any container.
+ * Uses high-clarity translucent white and subtle border refraction,
+ * avoiding dark muddy shadows or sunken black gradients.
  */
 fun Modifier.liquidGlass(
     shape: Shape = RoundedCornerShape(24.dp),
-    backgroundColor: Color = GlassCardBg,
-    borderColor: Color = GlassBorderColor,
+    backgroundColor: Color = Color.White.copy(alpha = 0.10f),
+    borderColor: Color = Color.White.copy(alpha = 0.22f),
     borderWidth: Dp = 1.dp,
     elevation: Dp = 0.dp
 ): Modifier = this
@@ -80,8 +84,8 @@ fun Modifier.liquidGlass(
     .background(
         brush = Brush.verticalGradient(
             colors = listOf(
-                backgroundColor.copy(alpha = 0.14f),
-                backgroundColor.copy(alpha = 0.05f)
+                backgroundColor.copy(alpha = if (backgroundColor.alpha > 0.2f) backgroundColor.alpha else 0.12f),
+                backgroundColor.copy(alpha = if (backgroundColor.alpha > 0.2f) backgroundColor.alpha * 0.7f else 0.08f)
             )
         )
     )
@@ -89,8 +93,8 @@ fun Modifier.liquidGlass(
         width = borderWidth,
         brush = Brush.verticalGradient(
             colors = listOf(
-                Color.White.copy(alpha = 0.28f),
-                borderColor.copy(alpha = 0.15f)
+                borderColor.copy(alpha = if (borderColor.alpha > 0.3f) borderColor.alpha else 0.35f),
+                borderColor.copy(alpha = if (borderColor.alpha > 0.3f) borderColor.alpha * 0.6f else 0.18f)
             )
         ),
         shape = shape
@@ -555,7 +559,7 @@ fun GlassDialog(
             Box(
                 modifier = modifier
                     .fillMaxWidth(0.92f)
-                    .androidx.compose.foundation.layout.widthIn(max = 480.dp)
+                    .widthIn(max = 480.dp)
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,

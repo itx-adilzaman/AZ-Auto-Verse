@@ -49,8 +49,9 @@ class AutoVerseViewModel(
     val recentSearches: StateFlow<List<String>> = repository.recentSearches
     val trendingSearches: List<String> = repository.trendingSearches
     val cachedCarIds: StateFlow<Set<String>> = repository.cachedCarIds
-    val automotiveAds: List<com.example.model.AutomotiveAd> = repository.automotiveAds
-
+    val automotiveAds: StateFlow<List<com.example.model.AutomotiveAd>> = repository.automotiveAds
+    val isNeonConnected: StateFlow<Boolean> = repository.isNeonConnected
+    val neonStatus: StateFlow<String> = repository.neonStatus
 
     private val _carFilter = MutableStateFlow(CarFilter())
     val carFilter: StateFlow<CarFilter> = _carFilter.asStateFlow()
@@ -232,6 +233,28 @@ class AutoVerseViewModel(
             }
             onResult(success, error)
         }
+    }
+
+    fun signInWithGoogle(context: android.content.Context, onResult: (Boolean, String?) -> Unit) {
+        viewModelScope.launch {
+            val result = com.example.auth.GoogleAuthHelper.signIn(context)
+            if (result.isSuccess) {
+                val googleUser = result.getOrThrow()
+                val (success, error) = repository.loginWithGoogle(googleUser)
+                if (success) {
+                    showNotification("Signed in as ${googleUser.displayName} (Google)")
+                }
+                onResult(success, error)
+            } else {
+                val err = result.exceptionOrNull()?.localizedMessage ?: "Google sign-in error"
+                onResult(false, err)
+            }
+        }
+    }
+
+    fun syncWithNeon() {
+        repository.syncWithNeon()
+        showNotification("Syncing live with Neon Cloud PostgreSQL...")
     }
 
     fun register(

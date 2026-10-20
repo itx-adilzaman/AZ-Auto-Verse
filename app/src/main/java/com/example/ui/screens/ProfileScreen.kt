@@ -1,6 +1,16 @@
 package com.example.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -58,7 +68,16 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.DirectionsCar
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.Storage
+import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material.icons.filled.AccountCircle
+import com.example.ui.theme.NeonCyan
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
 import com.example.model.AppCurrency
 import com.example.model.UnitSystem
@@ -68,6 +87,7 @@ import com.example.ui.components.GlassIconButton
 import com.example.ui.components.GlassSecondaryButton
 import com.example.ui.components.GlassTextField
 import com.example.ui.components.liquidGlass
+import com.example.ui.theme.AmberGold
 import com.example.ui.theme.DeepBlack
 import com.example.ui.theme.ElectricBlue
 import com.example.ui.theme.ElectricBlueLight
@@ -83,7 +103,6 @@ import com.example.ui.viewmodel.AutoVerseViewModel
 fun ProfileScreen(
     viewModel: AutoVerseViewModel,
     onOpenCar: (String) -> Unit,
-    onOpenAdmin: () -> Unit,
     onLogout: () -> Unit
 ) {
     val userProfile by viewModel.userProfile.collectAsState()
@@ -133,8 +152,13 @@ fun ProfileScreen(
                                     .clip(CircleShape)
                                     .border(2.dp, ElectricBlue, CircleShape)
                             ) {
+                                val avatarContext = androidx.compose.ui.platform.LocalContext.current
                                 AsyncImage(
-                                    model = userProfile.avatarUrl,
+                                    model = coil.request.ImageRequest.Builder(avatarContext)
+                                        .data(userProfile.avatarUrl)
+                                        .crossfade(true)
+                                        .setHeader("User-Agent", "Mozilla/5.0 (Linux; Android 14)")
+                                        .build(),
                                     contentDescription = "User Avatar",
                                     contentScale = ContentScale.Crop,
                                     modifier = Modifier.fillMaxSize()
@@ -156,7 +180,84 @@ fun ProfileScreen(
                                 style = MaterialTheme.typography.bodyMedium.copy(color = GlassTextSecondary)
                             )
 
-                            Spacer(modifier = Modifier.height(12.dp))
+                            if (userProfile.bio.isNotBlank()) {
+                                Spacer(modifier = Modifier.height(12.dp))
+                                Text(
+                                    text = "\"${userProfile.bio}\"",
+                                    style = MaterialTheme.typography.bodySmall.copy(
+                                        color = GlassTextSecondary,
+                                        fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                    ),
+                                    modifier = Modifier.padding(horizontal = 12.dp)
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(14.dp))
+
+                            // Profile real details row (Phone, Location, Dream Car)
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(Color.White.copy(alpha = 0.05f))
+                                    .border(1.dp, Color.White.copy(alpha = 0.10f), RoundedCornerShape(16.dp))
+                                    .padding(14.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                if (userProfile.phoneNumber.isNotBlank()) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(
+                                            imageVector = Icons.Default.Phone,
+                                            contentDescription = null,
+                                            tint = ElectricBlueLight,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            text = userProfile.phoneNumber,
+                                            style = MaterialTheme.typography.bodySmall.copy(color = GlassTextPrimary)
+                                        )
+                                    }
+                                }
+
+                                if (userProfile.location.isNotBlank()) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(
+                                            imageVector = Icons.Default.LocationOn,
+                                            contentDescription = null,
+                                            tint = ElectricBlueLight,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            text = userProfile.location,
+                                            style = MaterialTheme.typography.bodySmall.copy(color = GlassTextPrimary)
+                                        )
+                                    }
+                                }
+
+                                if (userProfile.dreamCar.isNotBlank()) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(
+                                            imageVector = Icons.Default.DirectionsCar,
+                                            contentDescription = null,
+                                            tint = AmberGold,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            text = "Dream Car: ${userProfile.dreamCar}",
+                                            style = MaterialTheme.typography.bodySmall.copy(
+                                                color = Color.White,
+                                                fontWeight = FontWeight.SemiBold
+                                            )
+                                        )
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(14.dp))
 
                             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                                 Box(
@@ -173,27 +274,12 @@ fun ProfileScreen(
                                     )
                                 }
 
-                                if (userProfile.isAdmin) {
-                                    Box(
-                                        modifier = Modifier
-                                            .liquidGlass(shape = CircleShape, backgroundColor = WinnerGreen.copy(alpha = 0.2f))
-                                            .padding(horizontal = 12.dp, vertical = 6.dp)
-                                    ) {
-                                        Text(
-                                            text = "Admin Mode",
-                                            style = MaterialTheme.typography.labelSmall.copy(
-                                                color = WinnerGreen,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                        )
-                                    }
-                                }
                             }
 
                             Spacer(modifier = Modifier.height(16.dp))
 
                             GlassSecondaryButton(
-                                text = "Edit Profile",
+                                text = "Edit Profile & Dream Car",
                                 icon = Icons.Default.Edit,
                                 onClick = { showEditProfileDialog = true }
                             )
@@ -284,58 +370,6 @@ fun ProfileScreen(
                                 icon = Icons.Default.Language,
                                 onClick = { showLanguageDialog = true }
                             )
-
-                            HorizontalDivider(color = GlassBorderColor, modifier = Modifier.padding(vertical = 10.dp))
-
-                            // Admin Mode Toggle
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        imageVector = Icons.Default.AdminPanelSettings,
-                                        contentDescription = null,
-                                        tint = WinnerGreen,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(12.dp))
-                                    Column {
-                                        Text(
-                                            text = "Admin Publishing Panel",
-                                            style = MaterialTheme.typography.bodyMedium.copy(
-                                                fontWeight = FontWeight.SemiBold,
-                                                color = Color.White
-                                            )
-                                        )
-                                        Text(
-                                            text = "Add, modify, and delete cars from database",
-                                            style = MaterialTheme.typography.bodySmall.copy(color = GlassTextSecondary)
-                                        )
-                                    }
-                                }
-
-                                Switch(
-                                    checked = userProfile.isAdmin,
-                                    onCheckedChange = { viewModel.toggleAdminMode() },
-                                    colors = SwitchDefaults.colors(
-                                        checkedThumbColor = Color.White,
-                                        checkedTrackColor = WinnerGreen
-                                    )
-                                )
-                            }
-
-                            if (userProfile.isAdmin) {
-                                Spacer(modifier = Modifier.height(14.dp))
-                                GlassButton(
-                                    text = "Launch Car Management Portal",
-                                    icon = Icons.Default.AdminPanelSettings,
-                                    onClick = onOpenAdmin,
-                                    modifier = Modifier.fillMaxWidth(),
-                                    gradient = listOf(WinnerGreen, Color(0xFF00802B))
-                                )
-                            }
                         }
                     }
                 }
@@ -405,12 +439,23 @@ fun ProfileScreen(
                 }
             }
 
+            // Magnificent Animated Creator & Visionary Signature Footer
+            item {
+                Spacer(modifier = Modifier.height(14.dp))
+                AdilZamanSignatureFooter(
+                    userAvatarUrl = userProfile.avatarUrl.ifBlank {
+                        "https://camo.githubusercontent.com/d8d6d485bfb0a9318e25ba0e75df600a0b923c7eb66c604a631a26c43ceed9af/68747470733a2f2f7265732e636c6f7564696e6172792e636f6d2f646b647a75796a63342f696d6167652f75706c6f61642f76313739323433323531352f313738343634343737343431325f6e736d6c79682e6a7067"
+                    },
+                    userName = if (userProfile.name.isNotBlank()) userProfile.name else "Muhammad Adil Zaman"
+                )
+            }
+
             // Logout Button
             item {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 28.dp)
+                        .padding(horizontal = 20.dp, vertical = 20.dp)
                 ) {
                     GlassSecondaryButton(
                         text = "Sign Out of AutoVerse",
@@ -423,106 +468,230 @@ fun ProfileScreen(
             }
         }
 
-        // Edit Profile Dialog
+        // Real Database Edit Profile Dialog with Glassmorphism
         if (showEditProfileDialog) {
             var tempName by remember { mutableStateOf(userProfile.name) }
             var tempEmail by remember { mutableStateOf(userProfile.email) }
+            var tempPhone by remember { mutableStateOf(userProfile.phoneNumber) }
+            var tempBio by remember { mutableStateOf(userProfile.bio) }
+            var tempLocation by remember { mutableStateOf(userProfile.location) }
+            var tempDreamCar by remember { mutableStateOf(userProfile.dreamCar) }
 
-            Dialog(onDismissRequest = { showEditProfileDialog = false }) {
-                GlassCard(
-                    modifier = Modifier.fillMaxWidth(0.95f),
-                    shape = RoundedCornerShape(26.dp)
+            Dialog(
+                onDismissRequest = { showEditProfileDialog = false },
+                properties = DialogProperties(usePlatformDefaultWidth = false)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.70f))
+                        .clickable { showEditProfileDialog = false },
+                    contentAlignment = Alignment.Center
                 ) {
-                    Column(modifier = Modifier.padding(22.dp)) {
-                        Text(
-                            text = "Edit Profile",
-                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
+                    GlassCard(
+                        modifier = Modifier
+                            .fillMaxWidth(0.92f)
+                            .clickable(enabled = false) {},
+                        shape = RoundedCornerShape(28.dp),
+                        backgroundColor = Color.White.copy(alpha = 0.12f),
+                        borderColor = ElectricBlueLight.copy(alpha = 0.45f)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(22.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column {
+                                    Text(
+                                        text = "Edit Real Profile",
+                                        style = MaterialTheme.typography.titleLarge.copy(
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color.White
+                                        )
+                                    )
+                                    Text(
+                                        text = "Persisted directly into Room SQLite Database",
+                                        style = MaterialTheme.typography.bodySmall.copy(color = WinnerGreen)
+                                    )
+                                }
+                                GlassIconButton(
+                                    icon = Icons.Default.Close,
+                                    contentDescription = "Close",
+                                    onClick = { showEditProfileDialog = false },
+                                    size = 36.dp
+                                )
+                            }
 
-                        GlassTextField(
-                            value = tempName,
-                            onValueChange = { tempName = it },
-                            placeholder = "Full Name"
-                        )
+                            Spacer(modifier = Modifier.height(14.dp))
 
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        GlassTextField(
-                            value = tempEmail,
-                            onValueChange = { tempEmail = it },
-                            placeholder = "Email Address"
-                        )
-
-                        Spacer(modifier = Modifier.height(20.dp))
-
-                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            GlassSecondaryButton(
-                                text = "Cancel",
-                                onClick = { showEditProfileDialog = false },
-                                modifier = Modifier.weight(1f)
+                            GlassTextField(
+                                value = tempName,
+                                onValueChange = { tempName = it },
+                                placeholder = "Full Name"
                             )
-                            GlassButton(
-                                text = "Save",
-                                onClick = {
-                                    if (tempName.isNotBlank() && tempEmail.isNotBlank()) {
-                                        viewModel.updateProfile(tempName, tempEmail)
-                                        showEditProfileDialog = false
-                                    }
-                                },
-                                modifier = Modifier.weight(1f)
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            GlassTextField(
+                                value = tempEmail,
+                                onValueChange = { tempEmail = it },
+                                placeholder = "Email Address"
                             )
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            GlassTextField(
+                                value = tempPhone,
+                                onValueChange = { tempPhone = it },
+                                placeholder = "Phone Number (e.g. +1 555-019-2834)",
+                                leadingIcon = Icons.Default.Phone
+                            )
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            GlassTextField(
+                                value = tempLocation,
+                                onValueChange = { tempLocation = it },
+                                placeholder = "Location / City (e.g. Monaco & London)",
+                                leadingIcon = Icons.Default.LocationOn
+                            )
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            GlassTextField(
+                                value = tempDreamCar,
+                                onValueChange = { tempDreamCar = it },
+                                placeholder = "Dream Hypercar (e.g. Ferrari SF90 XX)",
+                                leadingIcon = Icons.Default.DirectionsCar
+                            )
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            GlassTextField(
+                                value = tempBio,
+                                onValueChange = { tempBio = it },
+                                placeholder = "Enthusiast Bio / Passion Statement",
+                                modifier = Modifier.height(80.dp)
+                            )
+
+                            Spacer(modifier = Modifier.height(18.dp))
+
+                            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                GlassSecondaryButton(
+                                    text = "Cancel",
+                                    onClick = { showEditProfileDialog = false },
+                                    modifier = Modifier.weight(1f)
+                                )
+                                GlassButton(
+                                    text = "Save to Database",
+                                    onClick = {
+                                        if (tempName.isNotBlank() && tempEmail.isNotBlank()) {
+                                            viewModel.updateProfile(
+                                                name = tempName,
+                                                email = tempEmail,
+                                                phone = tempPhone,
+                                                bio = tempBio,
+                                                location = tempLocation,
+                                                dreamCar = tempDreamCar
+                                            )
+                                            showEditProfileDialog = false
+                                        }
+                                    },
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
                         }
                     }
                 }
             }
         }
 
-        // Currency Picker Dialog
+        // Glassmorphic Currency Picker Dialog
         if (showCurrencyDialog) {
-            Dialog(onDismissRequest = { showCurrencyDialog = false }) {
-                GlassCard(
-                    modifier = Modifier.fillMaxWidth(0.95f),
-                    shape = RoundedCornerShape(26.dp)
+            Dialog(
+                onDismissRequest = { showCurrencyDialog = false },
+                properties = DialogProperties(usePlatformDefaultWidth = false)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.70f))
+                        .clickable { showCurrencyDialog = false },
+                    contentAlignment = Alignment.Center
                 ) {
-                    Column(modifier = Modifier.padding(22.dp)) {
-                        Text(
-                            text = "Select Preferred Currency",
-                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
-                        )
-                        Spacer(modifier = Modifier.height(14.dp))
-
-                        AppCurrency.entries.forEach { curr ->
-                            val isSelected = userProfile.preferredCurrency == curr
+                    GlassCard(
+                        modifier = Modifier
+                            .fillMaxWidth(0.92f)
+                            .clickable(enabled = false) {},
+                        shape = RoundedCornerShape(28.dp),
+                        backgroundColor = Color.White.copy(alpha = 0.12f),
+                        borderColor = ElectricBlueLight.copy(alpha = 0.45f)
+                    ) {
+                        Column(modifier = Modifier.padding(22.dp)) {
                             Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(
-                                        if (isSelected) ElectricBlue.copy(alpha = 0.2f)
-                                        else Color.Transparent
-                                    )
-                                    .clickable {
-                                        viewModel.updateCurrency(curr)
-                                        showCurrencyDialog = false
-                                    }
-                                    .padding(vertical = 12.dp, horizontal = 10.dp),
+                                modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = curr.label,
-                                    style = MaterialTheme.typography.bodyMedium.copy(
-                                        color = if (isSelected) Color.White else GlassTextSecondary,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                    text = "Select Preferred Currency",
+                                    style = MaterialTheme.typography.titleLarge.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
                                     )
                                 )
-                                if (isSelected) {
-                                    Icon(
-                                        imageVector = Icons.Default.Check,
-                                        contentDescription = null,
-                                        tint = ElectricBlueLight
+                                GlassIconButton(
+                                    icon = Icons.Default.Close,
+                                    contentDescription = "Close",
+                                    onClick = { showCurrencyDialog = false },
+                                    size = 36.dp
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(14.dp))
+
+                            AppCurrency.entries.forEach { curr ->
+                                val isSelected = userProfile.preferredCurrency == curr
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 4.dp)
+                                        .clip(RoundedCornerShape(14.dp))
+                                        .background(
+                                            if (isSelected) ElectricBlue.copy(alpha = 0.22f)
+                                            else Color.White.copy(alpha = 0.05f)
+                                        )
+                                        .border(
+                                            1.dp,
+                                            if (isSelected) ElectricBlueLight else Color.White.copy(alpha = 0.12f),
+                                            RoundedCornerShape(14.dp)
+                                        )
+                                        .clickable {
+                                            viewModel.updateCurrency(curr)
+                                            showCurrencyDialog = false
+                                        }
+                                        .padding(vertical = 12.dp, horizontal = 14.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "${curr.symbol}  ${curr.label} (${curr.code})",
+                                        style = MaterialTheme.typography.bodyMedium.copy(
+                                            color = if (isSelected) Color.White else GlassTextSecondary,
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                        )
                                     )
+                                    if (isSelected) {
+                                        Icon(
+                                            imageVector = Icons.Default.Check,
+                                            contentDescription = null,
+                                            tint = ElectricBlueLight
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -531,52 +700,88 @@ fun ProfileScreen(
             }
         }
 
-        // Language Picker Dialog
+        // Glassmorphic Language Picker Dialog
         if (showLanguageDialog) {
             val languages = listOf("English", "Urdu (اردو)", "Arabic (العربية)")
-            Dialog(onDismissRequest = { showLanguageDialog = false }) {
-                GlassCard(
-                    modifier = Modifier.fillMaxWidth(0.95f),
-                    shape = RoundedCornerShape(26.dp)
+            Dialog(
+                onDismissRequest = { showLanguageDialog = false },
+                properties = DialogProperties(usePlatformDefaultWidth = false)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.70f))
+                        .clickable { showLanguageDialog = false },
+                    contentAlignment = Alignment.Center
                 ) {
-                    Column(modifier = Modifier.padding(22.dp)) {
-                        Text(
-                            text = "Select Language",
-                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
-                        )
-                        Spacer(modifier = Modifier.height(14.dp))
-
-                        languages.forEach { lang ->
-                            val isSelected = userProfile.language == lang
+                    GlassCard(
+                        modifier = Modifier
+                            .fillMaxWidth(0.92f)
+                            .clickable(enabled = false) {},
+                        shape = RoundedCornerShape(28.dp),
+                        backgroundColor = Color.White.copy(alpha = 0.12f),
+                        borderColor = ElectricBlueLight.copy(alpha = 0.45f)
+                    ) {
+                        Column(modifier = Modifier.padding(22.dp)) {
                             Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(
-                                        if (isSelected) ElectricBlue.copy(alpha = 0.2f)
-                                        else Color.Transparent
-                                    )
-                                    .clickable {
-                                        viewModel.updateLanguage(lang)
-                                        showLanguageDialog = false
-                                    }
-                                    .padding(vertical = 12.dp, horizontal = 10.dp),
+                                modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = lang,
-                                    style = MaterialTheme.typography.bodyMedium.copy(
-                                        color = if (isSelected) Color.White else GlassTextSecondary,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                    text = "Select Language",
+                                    style = MaterialTheme.typography.titleLarge.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
                                     )
                                 )
-                                if (isSelected) {
-                                    Icon(
-                                        imageVector = Icons.Default.Check,
-                                        contentDescription = null,
-                                        tint = ElectricBlueLight
+                                GlassIconButton(
+                                    icon = Icons.Default.Close,
+                                    contentDescription = "Close",
+                                    onClick = { showLanguageDialog = false },
+                                    size = 36.dp
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(14.dp))
+
+                            languages.forEach { lang ->
+                                val isSelected = userProfile.language == lang
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 4.dp)
+                                        .clip(RoundedCornerShape(14.dp))
+                                        .background(
+                                            if (isSelected) ElectricBlue.copy(alpha = 0.22f)
+                                            else Color.White.copy(alpha = 0.05f)
+                                        )
+                                        .border(
+                                            1.dp,
+                                            if (isSelected) ElectricBlueLight else Color.White.copy(alpha = 0.12f),
+                                            RoundedCornerShape(14.dp)
+                                        )
+                                        .clickable {
+                                            viewModel.updateLanguage(lang)
+                                            showLanguageDialog = false
+                                        }
+                                        .padding(vertical = 12.dp, horizontal = 14.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = lang,
+                                        style = MaterialTheme.typography.bodyMedium.copy(
+                                            color = if (isSelected) Color.White else GlassTextSecondary,
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                        )
                                     )
+                                    if (isSelected) {
+                                        Icon(
+                                            imageVector = Icons.Default.Check,
+                                            contentDescription = null,
+                                            tint = ElectricBlueLight
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -631,5 +836,325 @@ fun SettingItemRow(
                 fontWeight = FontWeight.Bold
             )
         )
+    }
+}
+
+@Composable
+fun AdilZamanSignatureFooter(
+    userAvatarUrl: String,
+    userName: String
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "footer_anim")
+
+    // Pulsing aura scale & alpha
+    val pulseScale by infiniteTransition.animateFloat(
+        initialValue = 0.95f,
+        targetValue = 1.08f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2200, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "pulse_scale"
+    )
+
+    val auraAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.30f,
+        targetValue = 0.75f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2200, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "aura_alpha"
+    )
+
+    // Rotating gradient border angle
+    val rotationAngle by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(7500, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "border_rotation"
+    )
+
+    val context = androidx.compose.ui.platform.LocalContext.current
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 10.dp)
+            .clip(RoundedCornerShape(28.dp))
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        Color(0xFF101526),
+                        Color(0xFF080C16)
+                    )
+                )
+            )
+            .border(
+                width = 1.5.dp,
+                brush = Brush.sweepGradient(
+                    listOf(
+                        ElectricBlue.copy(alpha = 0.7f),
+                        NeonCyan,
+                        AmberGold.copy(alpha = 0.8f),
+                        WinnerGreen.copy(alpha = 0.7f),
+                        ElectricBlue.copy(alpha = 0.7f)
+                    )
+                ),
+                shape = RoundedCornerShape(28.dp)
+            )
+            .padding(22.dp)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // Animated Avatar Container with Glowing Aura
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.size(96.dp)
+            ) {
+                // Pulsing ambient glow aura behind avatar
+                Box(
+                    modifier = Modifier
+                        .size(92.dp)
+                        .graphicsLayer {
+                            scaleX = pulseScale
+                            scaleY = pulseScale
+                        }
+                        .clip(CircleShape)
+                        .background(
+                            brush = Brush.radialGradient(
+                                colors = listOf(
+                                    NeonCyan.copy(alpha = auraAlpha),
+                                    ElectricBlue.copy(alpha = auraAlpha * 0.5f),
+                                    Color.Transparent
+                                )
+                            )
+                        )
+                )
+
+                // Rotating gradient border ring
+                Box(
+                    modifier = Modifier
+                        .size(86.dp)
+                        .graphicsLayer {
+                            rotationZ = rotationAngle
+                        }
+                        .clip(CircleShape)
+                        .border(
+                            width = 2.5.dp,
+                            brush = Brush.sweepGradient(
+                                listOf(
+                                    ElectricBlue,
+                                    NeonCyan,
+                                    AmberGold,
+                                    WinnerGreen,
+                                    ElectricBlue
+                                )
+                            ),
+                            shape = CircleShape
+                        )
+                )
+
+                // User Avatar Image
+                Box(
+                    modifier = Modifier
+                        .size(76.dp)
+                        .clip(CircleShape)
+                        .border(1.5.dp, Color.White.copy(alpha = 0.5f), CircleShape)
+                ) {
+                    AsyncImage(
+                        model = coil.request.ImageRequest.Builder(context)
+                            .data(userAvatarUrl)
+                            .crossfade(true)
+                            .setHeader("User-Agent", "Mozilla/5.0 (Linux; Android 14)")
+                            .build(),
+                        contentDescription = userName,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+
+                // Verified Badge floating at bottom right
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .size(24.dp)
+                        .clip(CircleShape)
+                        .background(WinnerGreen)
+                        .border(1.5.dp, Color(0xFF080C16), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = "Verified",
+                        tint = Color.White,
+                        modifier = Modifier.size(14.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Subtitle Tag: CREATOR & ARCHITECT
+            Box(
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .background(
+                        brush = Brush.horizontalGradient(
+                            listOf(
+                                ElectricBlue.copy(alpha = 0.25f),
+                                NeonCyan.copy(alpha = 0.25f)
+                            )
+                        )
+                    )
+                    .border(1.dp, NeonCyan.copy(alpha = 0.45f), CircleShape)
+                    .padding(horizontal = 14.dp, vertical = 5.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Star,
+                        contentDescription = null,
+                        tint = AmberGold,
+                        modifier = Modifier.size(13.dp)
+                    )
+                    Text(
+                        text = "AUTOVERSE VISIONARY & CREATOR",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            letterSpacing = 1.8.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = NeonCyan,
+                            fontSize = 10.sp
+                        )
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // User Name in Exquisite Typography
+            Text(
+                text = userName,
+                style = MaterialTheme.typography.headlineSmall.copy(
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = 1.2.sp,
+                    color = Color.White
+                )
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = "Lead Automotive Curator & Full-Stack Architect",
+                style = MaterialTheme.typography.bodySmall.copy(
+                    color = ElectricBlueLight,
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 12.sp
+                )
+            )
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Badges row
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color.White.copy(alpha = 0.06f))
+                        .padding(horizontal = 10.dp, vertical = 5.dp)
+                ) {
+                    Text(
+                        text = "Verified Driver",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            color = WinnerGreen,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 10.sp
+                        )
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color.White.copy(alpha = 0.06f))
+                        .padding(horizontal = 10.dp, vertical = 5.dp)
+                ) {
+                    Text(
+                        text = "Islamabad & London",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            color = GlassTextSecondary,
+                            fontWeight = FontWeight.Normal,
+                            fontSize = 10.sp
+                        )
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color.White.copy(alpha = 0.06f))
+                        .padding(horizontal = 10.dp, vertical = 5.dp)
+                ) {
+                    Text(
+                        text = "Ferrari Collector",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            color = AmberGold,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 10.sp
+                        )
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            HorizontalDivider(
+                color = Color.White.copy(alpha = 0.08f),
+                thickness = 1.dp
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Text(
+                text = "“Engineered with passion for supercar collectors, racers, and design purists worldwide.”",
+                style = MaterialTheme.typography.bodySmall.copy(
+                    color = GlassTextMuted,
+                    fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    fontSize = 11.sp
+                ),
+                modifier = Modifier.padding(horizontal = 8.dp)
+            )
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(6.dp)
+                        .clip(CircleShape)
+                        .background(WinnerGreen)
+                )
+                Text(
+                    text = "AutoVerse 2026 • Live on Neon PostgreSQL Cloud",
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        color = GlassTextMuted,
+                        fontSize = 9.sp,
+                        letterSpacing = 0.8.sp
+                    )
+                )
+            }
+        }
     }
 }

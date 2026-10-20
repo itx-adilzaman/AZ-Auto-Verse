@@ -1,8 +1,14 @@
 package com.example.data
 
+import android.util.Log
+import com.example.auth.GoogleUserData
 import com.example.data.local.CarDetailDao
 import com.example.data.local.CarEntity
+import com.example.data.local.UserDao
+import com.example.data.local.UserEntity
+import com.example.data.remote.NeonDatabaseClient
 import com.example.model.AppCurrency
+import com.example.model.AutomotiveAd
 import com.example.model.Brand
 import com.example.model.Car
 import com.example.model.CarFilter
@@ -20,85 +26,51 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.UUID
 
-import com.example.data.local.UserDao
-import com.example.data.local.UserEntity
-import com.example.model.AutomotiveAd
-
 class CarRepository(
     private val carDetailDao: CarDetailDao? = null,
     private val userDao: UserDao? = null
 ) {
+    companion object {
+        private const val TAG = "CarRepository"
+    }
+
     private val repositoryScope = CoroutineScope(Dispatchers.IO)
+    val neonClient: NeonDatabaseClient = NeonDatabaseClient.getInstance()
 
-    private val initialCars = SeedCarsData.cars + SeedCarsExtended.additionalCars
+    private val _isNeonConnected = MutableStateFlow(false)
+    val isNeonConnected: StateFlow<Boolean> = _isNeonConnected.asStateFlow()
 
-    private val _cars = MutableStateFlow<List<Car>>(initialCars)
+    private val _neonStatus = MutableStateFlow("Connecting to Neon PostgreSQL...")
+    val neonStatus: StateFlow<String> = _neonStatus.asStateFlow()
+
+    private val _cars = MutableStateFlow<List<Car>>(emptyList())
     val cars: StateFlow<List<Car>> = _cars.asStateFlow()
 
-    private val _brands = MutableStateFlow<List<Brand>>(SeedCarsData.brands)
+    private val _brands = MutableStateFlow<List<Brand>>(emptyList())
     val brands: StateFlow<List<Brand>> = _brands.asStateFlow()
 
-    private val _reviews = MutableStateFlow<List<Review>>(SeedCarsData.sampleReviews)
+    private val _reviews = MutableStateFlow<List<Review>>(emptyList())
     val reviews: StateFlow<List<Review>> = _reviews.asStateFlow()
 
     private val _userProfile = MutableStateFlow(
         UserProfile(
-            id = "user_default",
-            name = "Alex Vance",
-            email = "alex.vance@autoverse.io",
-            phoneNumber = "+1 (555) 019-2834",
-            bio = "Supercar enthusiast, collector, and amateur track day driver.",
-            location = "Monaco & London",
-            dreamCar = "Ferrari SF90 XX Stradale",
-            favoriteCarIds = setOf("ferrari-sf90", "porsche-gt3rs", "tesla-cybertruck"),
+            id = "user_adil_zaman",
+            name = "Muhammad Adil Zaman",
+            email = "malikmuhammadadilzaman@gmail.com",
+            phoneNumber = "+92 300 0000000",
+            bio = "Supercar Driver, Collector & AutoVerse Creator",
+            location = "Islamabad & London",
+            dreamCar = "Ferrari SF90 Stradale",
+            avatarUrl = "https://camo.githubusercontent.com/d8d6d485bfb0a9318e25ba0e75df600a0b923c7eb66c604a631a26c43ceed9af/68747470733a2f2f7265732e636c6f7564696e6172792e636f6d2f646b647a75796a63342f696d6167652f75706c6f61642f76313739323433323531352f313738343634343737343431325f6e736d6c79682e6a7067",
+            favoriteCarIds = setOf("ferrari-sf90", "porsche-gt3rs"),
             compareCarIds = listOf("ferrari-sf90", "lambo-revuelto"),
-            recentlyViewedCarIds = listOf("ferrari-sf90", "porsche-gt3rs", "bugatti-chiron-ss", "tesla-cybertruck")
+            recentlyViewedCarIds = listOf("ferrari-sf90", "porsche-gt3rs")
         )
     )
     val userProfile: StateFlow<UserProfile> = _userProfile.asStateFlow()
 
-    val automotiveAds: List<AutomotiveAd> = listOf(
-        AutomotiveAd(
-            id = "ad_pirelli",
-            sponsorName = "PIRELLI MOTORSPORT",
-            partnerBadge = "OFFICIAL TYRE PARTNER",
-            headline = "P Zero™ Trofeo RS",
-            subline = "Extreme dry road grip & track dominance. Standard equipment on Pagani Utopia & Ferrari SF90 XX.",
-            ctaText = "Explore Grip",
-            imageUrl = "https://images.unsplash.com/photo-1578637387939-43c525550085?auto=format&fit=crop&w=1200&q=80",
-            accentColorHex = 0xFFFFD60A
-        ),
-        AutomotiveAd(
-            id = "ad_brembo",
-            sponsorName = "BREMBO BRAKING SYSTEMS",
-            partnerBadge = "HYPERCAR STOPPING TECH",
-            headline = "Carbon-Ceramic Matrix (CCM-R)",
-            subline = "Formula 1 thermal dissipation technology engineered for consecutive 300+ km/h stops without fade.",
-            ctaText = "Discover Tech",
-            imageUrl = "https://images.unsplash.com/photo-1603584173870-7f23fdae1b7a?auto=format&fit=crop&w=1200&q=80",
-            accentColorHex = 0xFFFF375F
-        ),
-        AutomotiveAd(
-            id = "ad_mobil1",
-            sponsorName = "MOBIL 1 PERFORMANCE",
-            partnerBadge = "MOTORSPORT LUBRICANTS",
-            headline = "ESP Supercar 0W-40",
-            subline = "Unrivaled friction reduction across 9,000 RPM valvetrains. Proven at the 24 Hours of Le Mans.",
-            ctaText = "Learn More",
-            imageUrl = "https://images.unsplash.com/photo-1542282088-72c9c27ed0cd?auto=format&fit=crop&w=1200&q=80",
-            accentColorHex = 0xFF0A84FF
-        ),
-        AutomotiveAd(
-            id = "ad_akrapovic",
-            sponsorName = "AKRAPOVIČ EXHAUSTS",
-            partnerBadge = "ACOUSTIC MASTERPIECE",
-            headline = "Titanium Evolution Systems",
-            subline = "Ultralight titanium craftsmanship unleashing the raw uninhibited acoustic frequencies of V8, V10, and V12 engines.",
-            ctaText = "Listen Audio",
-            imageUrl = "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1200&q=80",
-            accentColorHex = 0xFF32D74B
-        )
-    )
+    private val _automotiveAds = MutableStateFlow<List<AutomotiveAd>>(emptyList())
+    val automotiveAds: StateFlow<List<AutomotiveAd>> = _automotiveAds.asStateFlow()
 
     private val _collections = MutableStateFlow<List<UserCollection>>(
         listOf(
@@ -141,71 +113,94 @@ class CarRepository(
     val cachedCarIds: StateFlow<Set<String>> = _cachedCarIds.asStateFlow()
 
     init {
-        // Initialize Room Database cache & real user database in background
+        // 1. Initialize Room Local Cache (offline mirror of Neon PostgreSQL)
         repositoryScope.launch {
             if (carDetailDao != null) {
                 try {
-                    // Populate Room cars if empty
-                    val count = carDetailDao.getCachedCarsCount()
-                    if (count == 0) {
-                        val entities = initialCars.map { CarEntity.fromCar(it) }
-                        carDetailDao.insertCars(entities)
-                    }
-
-                    // Observe Room for reactive cached car updates
                     carDetailDao.getAllCachedCars().collect { entities ->
-                        if (entities.isNotEmpty()) {
+                        if (entities.isNotEmpty() && _cars.value.isEmpty()) {
                             val cachedCarsList = entities.map { it.toCar() }
                             _cars.value = cachedCarsList
                             _cachedCarIds.value = entities.map { it.id }.toSet()
                         }
                     }
                 } catch (e: Exception) {
-                    _cars.value = initialCars
+                    Log.e(TAG, "Room cache load error", e)
                 }
             }
 
             if (userDao != null) {
                 try {
-                    val userCount = userDao.getUsersCount()
-                    if (userCount == 0) {
-                        // Seed default user into real Room database
-                        val seedUser = UserEntity(
-                            id = "user_default",
-                            email = "alex.vance@autoverse.io",
-                            passwordHash = "Autoverse2026!",
-                            fullName = "Alex Vance",
-                            phoneNumber = "+1 (555) 019-2834",
-                            bio = "Supercar enthusiast, collector, and amateur track day driver.",
-                            location = "Monaco & London",
-                            dreamCar = "Ferrari SF90 XX Stradale",
-                            avatarUrl = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
-                            preferredCurrency = "USD",
-                            unitSystem = "METRIC",
-                            language = "English",
-                            isAdmin = false,
-                            favoriteCarIdsString = "ferrari-sf90|porsche-gt3rs|tesla-cybertruck",
-                            compareCarIdsString = "ferrari-sf90|lambo-revuelto",
-                            recentlyViewedString = "ferrari-sf90|porsche-gt3rs|bugatti-chiron-ss|tesla-cybertruck"
-                        )
-                        userDao.insertUser(seedUser)
-                        _userProfile.value = seedUser.toUserProfile()
-                    } else {
-                        val existing = userDao.getUserById(_userProfile.value.id) 
-                            ?: userDao.getAllUsers().firstOrNull()
-                        if (existing != null) {
-                            _userProfile.value = existing.toUserProfile()
-                        }
+                    val existing = userDao.getUserById(_userProfile.value.id)
+                        ?: userDao.getAllUsers().firstOrNull()
+                    if (existing != null) {
+                        _userProfile.value = existing.toUserProfile()
                     }
-                } catch (_: Exception) {}
+                } catch (e: Exception) {
+                    Log.e(TAG, "UserDao initialization error", e)
+                }
+            }
+        }
+
+        // 2. Synchronize Live with Neon Cloud PostgreSQL Database
+        syncWithNeon()
+    }
+
+    fun syncWithNeon() {
+        repositoryScope.launch {
+            try {
+                _neonStatus.value = "Connecting to Neon Cloud..."
+                val isConnected = neonClient.testConnection()
+                if (isConnected) {
+                    _isNeonConnected.value = true
+                    _neonStatus.value = "Neon Cloud Live: PostgreSQL 16 (ap-southeast-1 pooler)"
+
+                    // 1. Fetch live cars from Neon
+                    val remoteCars = neonClient.fetchAllCars()
+                    if (remoteCars.isNotEmpty()) {
+                        _cars.value = remoteCars
+                        carDetailDao?.insertCars(remoteCars.map { CarEntity.fromCar(it) })
+                        _cachedCarIds.value = remoteCars.map { it.id }.toSet()
+                    }
+
+                    // 2. Fetch live brands from Neon
+                    val remoteBrands = neonClient.fetchAllBrands()
+                    if (remoteBrands.isNotEmpty()) {
+                        _brands.value = remoteBrands
+                    }
+
+                    // 3. Fetch live ads from Neon
+                    val remoteAds = neonClient.fetchAllAds()
+                    if (remoteAds.isNotEmpty()) {
+                        _automotiveAds.value = remoteAds
+                    }
+
+                    // 4. Fetch live reviews from Neon
+                    val remoteReviews = neonClient.fetchReviews()
+                    if (remoteReviews.isNotEmpty()) {
+                        _reviews.value = remoteReviews
+                    }
+
+                    // 5. Fetch live user profile from Neon
+                    val remoteProfile = neonClient.fetchUserProfile(_userProfile.value.id)
+                    if (remoteProfile != null) {
+                        _userProfile.value = remoteProfile
+                    }
+                    Log.d(TAG, "Neon Database sync complete: ${remoteCars.size} cars, ${remoteBrands.size} brands, ${remoteAds.size} ads.")
+                } else {
+                    _isNeonConnected.value = false
+                    _neonStatus.value = "Neon Offline - Using Local Room Storage"
+                }
+            } catch (e: Exception) {
+                _isNeonConnected.value = false
+                _neonStatus.value = "Neon Connection Error: ${e.localizedMessage ?: "Network Timeout"}"
+                Log.e(TAG, "Neon sync error", e)
             }
         }
     }
 
-
     fun getCarById(id: String): Car? {
         val car = _cars.value.find { it.id == id }
-        // Cache accessed car profile to Room for offline viewing
         if (car != null && carDetailDao != null) {
             repositoryScope.launch {
                 try {
@@ -226,15 +221,26 @@ class CarRepository(
     }
 
     fun toggleFavorite(carId: String) {
-        _userProfile.update { profile ->
-            val updatedFavorites = if (profile.favoriteCarIds.contains(carId)) {
-                profile.favoriteCarIds - carId
-            } else {
-                profile.favoriteCarIds + carId
-            }
-            profile.copy(favoriteCarIds = updatedFavorites)
+        val currentProfile = _userProfile.value
+        val isCurrentlyFav = currentProfile.favoriteCarIds.contains(carId)
+        val updatedFavorites = if (isCurrentlyFav) {
+            currentProfile.favoriteCarIds - carId
+        } else {
+            currentProfile.favoriteCarIds + carId
         }
-        syncUser(_userProfile.value)
+        val updatedProfile = currentProfile.copy(favoriteCarIds = updatedFavorites)
+        _userProfile.value = updatedProfile
+
+        syncUser(updatedProfile)
+
+        // Sync with Neon Cloud
+        repositoryScope.launch {
+            if (isCurrentlyFav) {
+                neonClient.removeFavorite(currentProfile.id, carId)
+            } else {
+                neonClient.addFavorite(currentProfile.id, carId)
+            }
+        }
     }
 
     fun isFavorite(carId: String): Boolean {
@@ -243,100 +249,136 @@ class CarRepository(
 
     fun toggleCompare(carId: String): Boolean {
         var added = false
-        _userProfile.update { profile ->
-            val current = profile.compareCarIds.toMutableList()
-            if (current.contains(carId)) {
-                current.remove(carId)
-                added = false
+        val currentProfile = _userProfile.value
+        val inComp = currentProfile.compareCarIds.contains(carId)
+
+        val updatedList = currentProfile.compareCarIds.toMutableList()
+        if (inComp) {
+            updatedList.remove(carId)
+            added = false
+        } else {
+            if (updatedList.size < 3) {
+                updatedList.add(carId)
+                added = true
             } else {
-                if (current.size < 3) {
-                    current.add(carId)
-                    added = true
-                } else {
-                    current.removeAt(0)
-                    current.add(carId)
-                    added = true
-                }
+                updatedList.removeAt(0)
+                updatedList.add(carId)
+                added = true
             }
-            profile.copy(compareCarIds = current)
         }
-        syncUser(_userProfile.value)
+
+        val updatedProfile = currentProfile.copy(compareCarIds = updatedList)
+        _userProfile.value = updatedProfile
+        syncUser(updatedProfile)
+
+        // Sync with Neon Cloud
+        repositoryScope.launch {
+            if (inComp) {
+                neonClient.removeComparison(currentProfile.id, carId)
+            } else {
+                neonClient.addComparison(currentProfile.id, carId)
+            }
+        }
         return added
     }
 
-    fun removeFromCompare(carId: String) {
-        _userProfile.update { profile ->
-            profile.copy(compareCarIds = profile.compareCarIds - carId)
+    fun recordRecentlyViewed(carId: String) {
+        val currentProfile = _userProfile.value
+        val updated = listOf(carId) + currentProfile.recentlyViewedCarIds.filter { it != carId }
+        val capped = updated.take(15)
+        val updatedProfile = currentProfile.copy(recentlyViewedCarIds = capped)
+        _userProfile.value = updatedProfile
+
+        syncUser(updatedProfile)
+
+        repositoryScope.launch {
+            neonClient.recordRecentView(currentProfile.id, carId)
         }
-        syncUser(_userProfile.value)
+    }
+
+    fun markCarViewed(carId: String) = recordRecentlyViewed(carId)
+
+    fun removeFromCompare(carId: String) {
+        val currentProfile = _userProfile.value
+        val updated = currentProfile.compareCarIds.filter { it != carId }
+        val updatedProfile = currentProfile.copy(compareCarIds = updated)
+        _userProfile.value = updatedProfile
+        syncUser(updatedProfile)
+        repositoryScope.launch {
+            neonClient.removeComparison(currentProfile.id, carId)
+        }
     }
 
     fun clearCompare() {
-        _userProfile.update { it.copy(compareCarIds = emptyList()) }
-        syncUser(_userProfile.value)
-    }
-
-    fun markCarViewed(carId: String) {
-        _userProfile.update { profile ->
-            val updated = (listOf(carId) + profile.recentlyViewedCarIds.filter { it != carId }).take(15)
-            profile.copy(recentlyViewedCarIds = updated)
-        }
-        // Cache to Room
-        val car = _cars.value.find { it.id == carId }
-        if (car != null && carDetailDao != null) {
-            repositoryScope.launch {
-                try {
-                    carDetailDao.insertCar(CarEntity.fromCar(car))
-                    _cachedCarIds.update { it + carId }
-                } catch (_: Exception) {}
+        val currentProfile = _userProfile.value
+        val updatedProfile = currentProfile.copy(compareCarIds = emptyList())
+        _userProfile.value = updatedProfile
+        syncUser(updatedProfile)
+        repositoryScope.launch {
+            for (cid in currentProfile.compareCarIds) {
+                neonClient.removeComparison(currentProfile.id, cid)
             }
         }
     }
 
-    fun addRecentSearch(query: String) {
-        val trimmed = query.trim()
-        if (trimmed.isEmpty()) return
-        _recentSearches.update { list ->
-            (listOf(trimmed) + list.filter { !it.equals(trimmed, ignoreCase = true) }).take(10)
-        }
-    }
-
-    fun clearRecentSearches() {
-        _recentSearches.value = emptyList()
-    }
-
     fun addReview(carId: String, title: String, comment: String, rating: Float) {
+        val profile = _userProfile.value
         val newReview = Review(
-            id = UUID.randomUUID().toString(),
+            id = "rev_${System.currentTimeMillis()}",
             carId = carId,
-            userName = _userProfile.value.name,
-            userAvatar = _userProfile.value.avatarUrl,
+            userName = profile.name,
+            userAvatar = profile.avatarUrl,
             rating = rating,
             date = "Today",
             title = title,
             comment = comment,
-            likes = 0
+            likes = 0,
+            isLikedByUser = false
         )
         _reviews.update { listOf(newReview) + it }
+
+        // Update Car reviews count and rating
+        _cars.update { list ->
+            list.map { car ->
+                if (car.id == carId) {
+                    val carReviews = (_reviews.value.filter { it.carId == carId })
+                    val newCount = carReviews.size
+                    val newAvg = carReviews.map { it.rating.toDouble() }.average()
+                    car.copy(
+                        reviewsCount = newCount,
+                        rating = if (newAvg.isNaN()) car.rating else ((newAvg * 10).toInt() / 10.0)
+                    )
+                } else car
+            }
+        }
+
+        repositoryScope.launch {
+            neonClient.addReview(newReview)
+            val updatedCar = _cars.value.find { it.id == carId }
+            if (updatedCar != null) {
+                neonClient.saveCar(updatedCar)
+                carDetailDao?.insertCar(CarEntity.fromCar(updatedCar))
+            }
+        }
     }
 
     fun toggleReviewLike(reviewId: String) {
         _reviews.update { list ->
             list.map { review ->
                 if (review.id == reviewId) {
-                    val wasLiked = review.isLikedByUser
-                    review.copy(
-                        isLikedByUser = !wasLiked,
-                        likes = if (wasLiked) (review.likes - 1).coerceAtLeast(0) else review.likes + 1
-                    )
+                    val isLiked = !review.isLikedByUser
+                    val newLikes = if (isLiked) review.likes + 1 else (review.likes - 1).coerceAtLeast(0)
+                    val updated = review.copy(likes = newLikes, isLikedByUser = isLiked)
+                    repositoryScope.launch { neonClient.addReview(updated) }
+                    updated
                 } else review
             }
         }
     }
 
-    fun createCollection(name: String, description: String, iconName: String = "Bookmark") {
+    fun createCollection(name: String, description: String, iconName: String) {
         val newCollection = UserCollection(
-            id = UUID.randomUUID().toString(),
+            id = "col_${UUID.randomUUID().toString().take(8)}",
             name = name,
             description = description,
             carIds = emptyList(),
@@ -365,15 +407,88 @@ class CarRepository(
         }
     }
 
-    private fun syncUser(profile: UserProfile) {
-        if (userDao != null) {
-            repositoryScope.launch {
-                try {
-                    val existing = userDao.getUserById(profile.id)
-                    val pwdHash = existing?.passwordHash ?: "Autoverse2026!"
-                    userDao.insertUser(UserEntity.fromUserProfile(profile, pwdHash))
-                } catch (_: Exception) {}
+    fun addRecentSearch(query: String) {
+        val trimmed = query.trim()
+        if (trimmed.isBlank()) return
+        _recentSearches.update { list ->
+            (listOf(trimmed) + list.filter { !it.equals(trimmed, ignoreCase = true) }).take(8)
+        }
+    }
+
+    fun clearRecentSearches() {
+        _recentSearches.value = emptyList()
+    }
+
+    // ==========================================
+    // AUTHENTICATION: GOOGLE & EMAIL WITH NEON
+    // ==========================================
+    suspend fun loginWithGoogle(userData: GoogleUserData): Pair<Boolean, String?> {
+        try {
+            val email = userData.email
+            val displayName = userData.displayName
+            val avatar = userData.profilePictureUri ?: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80"
+            val userId = "google_" + userData.id.replace(":", "_").replace("@", "_")
+
+            // Check if user exists in Neon
+            val existing = neonClient.fetchUserProfile(email) ?: neonClient.fetchUserProfile(userId)
+
+            val finalProfile = if (existing != null) {
+                existing.copy(
+                    name = displayName,
+                    avatarUrl = if (userData.profilePictureUri != null) userData.profilePictureUri else existing.avatarUrl
+                )
+            } else {
+                UserProfile(
+                    id = userId,
+                    name = displayName,
+                    email = email,
+                    phoneNumber = "+1 (555) 019-2834",
+                    bio = "Verified Google Driver & Collector",
+                    location = "San Francisco & Tokyo",
+                    dreamCar = "Ferrari SF90 XX Stradale",
+                    avatarUrl = avatar,
+                    favoriteCarIds = setOf("ferrari-sf90", "porsche-gt3rs"),
+                    compareCarIds = listOf("ferrari-sf90", "lambo-revuelto"),
+                    recentlyViewedCarIds = listOf("ferrari-sf90", "porsche-gt3rs", "tesla-cybertruck")
+                )
             }
+
+            _userProfile.value = finalProfile
+
+            // Persist to Neon
+            repositoryScope.launch {
+                neonClient.saveUserProfile(finalProfile, "google")
+                for (cid in finalProfile.favoriteCarIds) {
+                    neonClient.addFavorite(finalProfile.id, cid)
+                }
+            }
+
+            // Persist to Room
+            userDao?.let { dao ->
+                val entity = UserEntity(
+                    id = finalProfile.id,
+                    email = finalProfile.email,
+                    passwordHash = "google_authenticated",
+                    fullName = finalProfile.name,
+                    phoneNumber = finalProfile.phoneNumber,
+                    bio = finalProfile.bio,
+                    location = finalProfile.location,
+                    dreamCar = finalProfile.dreamCar,
+                    avatarUrl = finalProfile.avatarUrl,
+                    preferredCurrency = finalProfile.preferredCurrency.name,
+                    unitSystem = finalProfile.unitSystem.name,
+                    language = "English",
+                    isAdmin = finalProfile.isAdmin,
+                    favoriteCarIdsString = finalProfile.favoriteCarIds.joinToString("|"),
+                    compareCarIdsString = finalProfile.compareCarIds.joinToString("|"),
+                    recentlyViewedString = finalProfile.recentlyViewedCarIds.joinToString("|")
+                )
+                dao.insertUser(entity)
+            }
+            return Pair(true, null)
+        } catch (e: Exception) {
+            Log.e(TAG, "Google login failed", e)
+            return Pair(false, e.localizedMessage ?: "Google sign-in error")
         }
     }
 
@@ -384,6 +499,17 @@ class CarRepository(
             return Pair(false, "Please enter both email and password")
         }
 
+        // 1. Try Neon remote user
+        try {
+            val neonUser = neonClient.fetchUserProfile(trimmedEmail)
+            if (neonUser != null) {
+                _userProfile.value = neonUser
+                syncUser(neonUser)
+                return Pair(true, null)
+            }
+        } catch (_: Exception) {}
+
+        // 2. Try Local Room user
         if (userDao != null) {
             val user = userDao.getUserByEmail(trimmedEmail)
             if (user != null) {
@@ -394,7 +520,6 @@ class CarRepository(
                     return Pair(false, "Incorrect password. Please try again.")
                 }
             } else {
-                // If it's the demo account
                 if (trimmedEmail.equals("alex.vance@autoverse.io", ignoreCase = true)) {
                     val seedUser = UserEntity(
                         id = "user_default",
@@ -432,12 +557,26 @@ class CarRepository(
         if (trimmedEmail.isBlank() || !trimmedEmail.contains("@")) return Pair(false, "Please enter a valid email address")
         if (trimmedPwd.length < 6) return Pair(false, "Password must be at least 6 characters")
 
+        val newId = "user_" + UUID.randomUUID().toString().take(8)
+        val newProfile = UserProfile(
+            id = newId,
+            name = trimmedName,
+            email = trimmedEmail,
+            phoneNumber = phone.trim(),
+            bio = "AutoVerse driver & collector",
+            location = "Global",
+            dreamCar = dreamCar.ifBlank { "Porsche 911 GT3 RS" },
+            avatarUrl = "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=400&q=80"
+        )
+        _userProfile.value = newProfile
+
+        // Save in Neon
+        repositoryScope.launch {
+            neonClient.saveUserProfile(newProfile, "email")
+        }
+
+        // Save in Room
         if (userDao != null) {
-            val existing = userDao.getUserByEmail(trimmedEmail)
-            if (existing != null) {
-                return Pair(false, "An account with this email already exists. Please log in.")
-            }
-            val newId = "user_" + UUID.randomUUID().toString().take(8)
             val newEntity = UserEntity(
                 id = newId,
                 email = trimmedEmail,
@@ -447,22 +586,11 @@ class CarRepository(
                 bio = "AutoVerse driver & collector",
                 location = "Global",
                 dreamCar = dreamCar.ifBlank { "Porsche 911 GT3 RS" },
-                avatarUrl = "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=400&q=80"
+                avatarUrl = newProfile.avatarUrl
             )
             userDao.insertUser(newEntity)
-            _userProfile.value = newEntity.toUserProfile()
-            return Pair(true, null)
-        } else {
-            _userProfile.update {
-                it.copy(
-                    name = trimmedName,
-                    email = trimmedEmail,
-                    phoneNumber = phone,
-                    dreamCar = dreamCar
-                )
-            }
-            return Pair(true, null)
         }
+        return Pair(true, null)
     }
 
     fun updateCurrency(currency: AppCurrency) {
@@ -500,16 +628,54 @@ class CarRepository(
                 avatarUrl = if (avatarUrl.isNotBlank()) avatarUrl else current.avatarUrl
             )
         }
-        syncUser(_userProfile.value)
+        val updated = _userProfile.value
+        syncUser(updated)
+
+        // Save to Neon
+        repositoryScope.launch {
+            neonClient.saveUserProfile(updated)
+        }
     }
 
     fun setAdminMode(isAdmin: Boolean) {
         _userProfile.update { it.copy(isAdmin = isAdmin) }
-        syncUser(_userProfile.value)
+        val updated = _userProfile.value
+        syncUser(updated)
+        repositoryScope.launch {
+            neonClient.saveUserProfile(updated)
+        }
     }
 
+    private fun syncUser(profile: UserProfile) {
+        if (userDao == null) return
+        repositoryScope.launch {
+            try {
+                val entity = UserEntity(
+                    id = profile.id,
+                    email = profile.email,
+                    passwordHash = "Autoverse2026!",
+                    fullName = profile.name,
+                    phoneNumber = profile.phoneNumber,
+                    bio = profile.bio,
+                    location = profile.location,
+                    dreamCar = profile.dreamCar,
+                    avatarUrl = profile.avatarUrl,
+                    preferredCurrency = profile.preferredCurrency.name,
+                    unitSystem = profile.unitSystem.name,
+                    language = profile.language,
+                    isAdmin = profile.isAdmin,
+                    favoriteCarIdsString = profile.favoriteCarIds.joinToString("|"),
+                    compareCarIdsString = profile.compareCarIds.joinToString("|"),
+                    recentlyViewedString = profile.recentlyViewedCarIds.joinToString("|")
+                )
+                userDao.updateUser(entity)
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to sync user to Room", e)
+            }
+        }
+    }
 
-    // Admin car operations with Room persistence
+    // Admin car operations with Neon Cloud + Room persistence
     fun addCar(car: Car) {
         _cars.update { listOf(car) + it }
         if (carDetailDao != null) {
@@ -519,6 +685,9 @@ class CarRepository(
                     _cachedCarIds.update { it + car.id }
                 } catch (_: Exception) {}
             }
+        }
+        repositoryScope.launch {
+            neonClient.saveCar(car)
         }
     }
 
@@ -530,6 +699,9 @@ class CarRepository(
                     carDetailDao.insertCar(CarEntity.fromCar(car))
                 } catch (_: Exception) {}
             }
+        }
+        repositoryScope.launch {
+            neonClient.saveCar(car)
         }
     }
 
@@ -549,6 +721,9 @@ class CarRepository(
                     _cachedCarIds.update { it - carId }
                 } catch (_: Exception) {}
             }
+        }
+        repositoryScope.launch {
+            neonClient.deleteCar(carId)
         }
     }
 
