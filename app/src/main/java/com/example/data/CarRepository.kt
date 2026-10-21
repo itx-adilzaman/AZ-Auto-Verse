@@ -28,10 +28,20 @@ import java.util.UUID
 
 class CarRepository(
     private val carDetailDao: CarDetailDao? = null,
-    private val userDao: UserDao? = null
+    private val userDao: UserDao? = null,
+    private val context: android.content.Context? = null
 ) {
     companion object {
         private const val TAG = "CarRepository"
+        const val ADIL_FACE_AVATAR = "https://res.cloudinary.com/dkdzuyjc4/image/upload/c_thumb,g_face,w_600,h_600,z_0.75/v1792432515/1784644774412_nsmlyh.jpg"
+    }
+
+    private val sessionManager = context?.let { com.example.auth.UserSessionManager(it) }
+
+    fun isUserLoggedIn(): Boolean = sessionManager?.isLoggedIn ?: true
+
+    fun clearUserSession() {
+        sessionManager?.clearSession()
     }
 
     private val repositoryScope = CoroutineScope(Dispatchers.IO)
@@ -61,7 +71,7 @@ class CarRepository(
             bio = "Supercar Driver, Collector & AutoVerse Creator",
             location = "Islamabad & London",
             dreamCar = "Ferrari SF90 Stradale",
-            avatarUrl = "https://camo.githubusercontent.com/d8d6d485bfb0a9318e25ba0e75df600a0b923c7eb66c604a631a26c43ceed9af/68747470733a2f2f7265732e636c6f7564696e6172792e636f6d2f646b647a75796a63342f696d6167652f75706c6f61642f76313739323433323531352f313738343634343737343431325f6e736d6c79682e6a7067",
+            avatarUrl = ADIL_FACE_AVATAR,
             favoriteCarIds = setOf("ferrari-sf90", "porsche-gt3rs"),
             compareCarIds = listOf("ferrari-sf90", "lambo-revuelto"),
             recentlyViewedCarIds = listOf("ferrari-sf90", "porsche-gt3rs")
@@ -454,6 +464,7 @@ class CarRepository(
             }
 
             _userProfile.value = finalProfile
+            sessionManager?.saveLoginSession(finalProfile.id, finalProfile.email, finalProfile.name, finalProfile.avatarUrl)
 
             // Persist to Neon
             repositoryScope.launch {
@@ -505,6 +516,7 @@ class CarRepository(
             if (neonUser != null) {
                 _userProfile.value = neonUser
                 syncUser(neonUser)
+                sessionManager?.saveLoginSession(neonUser.id, neonUser.email, neonUser.name, neonUser.avatarUrl)
                 return Pair(true, null)
             }
         } catch (_: Exception) {}
@@ -514,7 +526,9 @@ class CarRepository(
             val user = userDao.getUserByEmail(trimmedEmail)
             if (user != null) {
                 if (user.passwordHash == trimmedPwd || trimmedPwd == "Autoverse2026!" || user.passwordHash.isBlank()) {
-                    _userProfile.value = user.toUserProfile()
+                    val profile = user.toUserProfile()
+                    _userProfile.value = profile
+                    sessionManager?.saveLoginSession(profile.id, profile.email, profile.name, profile.avatarUrl)
                     return Pair(true, null)
                 } else {
                     return Pair(false, "Incorrect password. Please try again.")
@@ -532,13 +546,16 @@ class CarRepository(
                         dreamCar = "Ferrari SF90 XX Stradale"
                     )
                     userDao.insertUser(seedUser)
-                    _userProfile.value = seedUser.toUserProfile()
+                    val profile = seedUser.toUserProfile()
+                    _userProfile.value = profile
+                    sessionManager?.saveLoginSession(profile.id, profile.email, profile.name, profile.avatarUrl)
                     return Pair(true, null)
                 }
                 return Pair(false, "No account registered with this email. Please sign up.")
             }
         } else {
             _userProfile.update { it.copy(email = trimmedEmail) }
+            sessionManager?.saveLoginSession(_userProfile.value.id, trimmedEmail, _userProfile.value.name, _userProfile.value.avatarUrl)
             return Pair(true, null)
         }
     }
@@ -566,9 +583,10 @@ class CarRepository(
             bio = "AutoVerse driver & collector",
             location = "Global",
             dreamCar = dreamCar.ifBlank { "Porsche 911 GT3 RS" },
-            avatarUrl = "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=400&q=80"
+            avatarUrl = ADIL_FACE_AVATAR
         )
         _userProfile.value = newProfile
+        sessionManager?.saveLoginSession(newProfile.id, newProfile.email, newProfile.name, newProfile.avatarUrl)
 
         // Save in Neon
         repositoryScope.launch {

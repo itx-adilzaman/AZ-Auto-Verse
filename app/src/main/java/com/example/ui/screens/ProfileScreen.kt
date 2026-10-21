@@ -146,52 +146,73 @@ fun ProfileScreen(
                                 .padding(24.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
+                            val adilAvatarUrl = "https://res.cloudinary.com/dkdzuyjc4/image/upload/c_thumb,g_face,w_600,h_600,z_0.75/v1792432515/1784644774412_nsmlyh.jpg"
+                            val adilName = "Muhammad Adil Zaman"
+
                             Box(
                                 modifier = Modifier
-                                    .size(90.dp)
+                                    .size(96.dp)
                                     .clip(CircleShape)
-                                    .border(2.dp, ElectricBlue, CircleShape)
+                                    .border(
+                                        width = 2.5.dp,
+                                        brush = Brush.sweepGradient(
+                                            listOf(
+                                                ElectricBlue,
+                                                NeonCyan,
+                                                AmberGold,
+                                                WinnerGreen,
+                                                ElectricBlue
+                                            )
+                                        ),
+                                        shape = CircleShape
+                                    )
+                                    .padding(3.dp)
                             ) {
                                 val avatarContext = androidx.compose.ui.platform.LocalContext.current
                                 AsyncImage(
                                     model = coil.request.ImageRequest.Builder(avatarContext)
-                                        .data(userProfile.avatarUrl)
+                                        .data(adilAvatarUrl)
                                         .crossfade(true)
                                         .setHeader("User-Agent", "Mozilla/5.0 (Linux; Android 14)")
                                         .build(),
-                                    contentDescription = "User Avatar",
+                                    contentDescription = adilName,
                                     contentScale = ContentScale.Crop,
-                                    modifier = Modifier.fillMaxSize()
+                                    alignment = Alignment.TopCenter,
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .clip(CircleShape)
                                 )
                             }
 
                             Spacer(modifier = Modifier.height(14.dp))
 
                             Text(
-                                text = userProfile.name,
+                                text = adilName,
                                 style = MaterialTheme.typography.titleLarge.copy(
-                                    fontWeight = FontWeight.Bold,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    letterSpacing = 0.5.sp,
                                     color = Color.White
                                 )
                             )
 
+                            Spacer(modifier = Modifier.height(4.dp))
+
                             Text(
-                                text = userProfile.email,
+                                text = "malikmuhammadadilzaman@gmail.com",
                                 style = MaterialTheme.typography.bodyMedium.copy(color = GlassTextSecondary)
                             )
 
-                            if (userProfile.bio.isNotBlank()) {
-                                Spacer(modifier = Modifier.height(12.dp))
-                                Text(
-                                    text = "\"${userProfile.bio}\"",
-                                    style = MaterialTheme.typography.bodySmall.copy(
-                                        color = GlassTextSecondary,
-                                        fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
-                                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                                    ),
-                                    modifier = Modifier.padding(horizontal = 12.dp)
-                                )
-                            }
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            Text(
+                                text = if (userProfile.bio.isNotBlank()) "\"${userProfile.bio}\"" else "“Creator & Full-Stack Architect of AutoVerse Supercar Platform”",
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    color = ElectricBlueLight,
+                                    fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                ),
+                                modifier = Modifier.padding(horizontal = 12.dp)
+                            )
 
                             Spacer(modifier = Modifier.height(14.dp))
 
@@ -443,10 +464,8 @@ fun ProfileScreen(
             item {
                 Spacer(modifier = Modifier.height(14.dp))
                 AdilZamanSignatureFooter(
-                    userAvatarUrl = userProfile.avatarUrl.ifBlank {
-                        "https://camo.githubusercontent.com/d8d6d485bfb0a9318e25ba0e75df600a0b923c7eb66c604a631a26c43ceed9af/68747470733a2f2f7265732e636c6f7564696e6172792e636f6d2f646b647a75796a63342f696d6167652f75706c6f61642f76313739323433323531352f313738343634343737343431325f6e736d6c79682e6a7067"
-                    },
-                    userName = if (userProfile.name.isNotBlank()) userProfile.name else "Muhammad Adil Zaman"
+                    userAvatarUrl = "https://res.cloudinary.com/dkdzuyjc4/image/upload/c_thumb,g_face,w_600,h_600,z_0.75/v1792432515/1784644774412_nsmlyh.jpg",
+                    userName = "Muhammad Adil Zaman"
                 )
             }
 
@@ -975,6 +994,7 @@ fun AdilZamanSignatureFooter(
                             .build(),
                         contentDescription = userName,
                         contentScale = ContentScale.Crop,
+                        alignment = Alignment.TopCenter,
                         modifier = Modifier.fillMaxSize()
                     )
                 }

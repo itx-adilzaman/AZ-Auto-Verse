@@ -287,7 +287,12 @@ class AutoVerseViewModel(
         showNotification("Profile updated in database")
     }
 
+    fun isUserLoggedIn(): Boolean {
+        return repository.isUserLoggedIn()
+    }
+
     fun logout() {
+        repository.clearUserSession()
         navigateTo(Screen.Login)
         showNotification("Logged out successfully")
     }

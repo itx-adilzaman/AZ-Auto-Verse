@@ -90,7 +90,7 @@ class MainActivity : ComponentActivity() {
 fun AutoVerseApp() {
     val context = androidx.compose.ui.platform.LocalContext.current
     val db = remember { com.example.data.local.AutoVerseDatabase.getInstance(context) }
-    val repository = remember { com.example.data.CarRepository(db.carDetailDao(), db.userDao()) }
+    val repository = remember { com.example.data.CarRepository(db.carDetailDao(), db.userDao(), context) }
     val viewModel: AutoVerseViewModel = viewModel(
         factory = object : androidx.lifecycle.ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
@@ -129,7 +129,11 @@ fun AutoVerseApp() {
                 is Screen.Splash -> {
                     SplashScreen(
                         onSplashComplete = {
-                            viewModel.navigateTo(Screen.Login)
+                            if (viewModel.isUserLoggedIn()) {
+                                viewModel.navigateTo(Screen.Main(NavTab.HOME))
+                            } else {
+                                viewModel.navigateTo(Screen.Login)
+                            }
                         }
                     )
                 }
