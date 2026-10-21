@@ -50,6 +50,7 @@ class NeonSeederTest {
         }
     }
 
+    @org.junit.Ignore("One-time database seeder")
     @Test
     fun seedNeonDatabase() {
         println("=== Starting Neon Database Schema Setup & Seeding ===")

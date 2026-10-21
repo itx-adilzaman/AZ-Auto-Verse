@@ -97,6 +97,21 @@ fun ExploreScreen(
     val filter by viewModel.carFilter.collectAsState()
     val userProfile by viewModel.userProfile.collectAsState()
     val brands by viewModel.brands.collectAsState()
+    val allCars by viewModel.cars.collectAsState()
+
+    val isAnyFilterActive = filter.query.isNotBlank() ||
+        filter.selectedBrand != null ||
+        filter.selectedBodyType != null ||
+        filter.selectedFuelType != null ||
+        filter.selectedCountry != null
+
+    val displayCars = if (filteredCars.isNotEmpty()) {
+        filteredCars
+    } else if (!isAnyFilterActive) {
+        if (allCars.isNotEmpty()) allCars else (com.example.data.SeedCarsData.cars + com.example.data.SeedCarsExtended.additionalCars)
+    } else {
+        emptyList()
+    }
 
     var isGridView by remember { mutableStateOf(true) }
     var showFilterSheet by remember { mutableStateOf(false) }
@@ -221,7 +236,7 @@ fun ExploreScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "${filteredCars.size} Models Found",
+                        text = "${displayCars.size} Models Found",
                         style = MaterialTheme.typography.bodySmall.copy(
                             color = GlassTextMuted,
                             fontWeight = FontWeight.SemiBold
@@ -244,10 +259,11 @@ fun ExploreScreen(
             }
 
             // Results List / Grid
-            if (filteredCars.isEmpty()) {
+            if (displayCars.isEmpty()) {
                 Box(
                     modifier = Modifier
-                        .fillMaxSize()
+                        .weight(1f)
+                        .fillMaxWidth()
                         .padding(bottom = 110.dp),
                     contentAlignment = Alignment.Center
                 ) {
@@ -267,13 +283,14 @@ fun ExploreScreen(
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(2),
                     modifier = Modifier
-                        .fillMaxSize()
+                        .weight(1f)
+                        .fillMaxWidth()
                         .testTag("explore_grid"),
-                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 120.dp),
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 120.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(filteredCars) { car ->
+                    items(displayCars, key = { it.id }) { car ->
                         GridCarCard(
                             car = car,
                             currency = userProfile.preferredCurrency,
@@ -286,12 +303,13 @@ fun ExploreScreen(
             } else {
                 LazyColumn(
                     modifier = Modifier
-                        .fillMaxSize()
+                        .weight(1f)
+                        .fillMaxWidth()
                         .testTag("explore_list"),
-                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 120.dp),
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 120.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(filteredCars) { car ->
+                    items(displayCars, key = { it.id }) { car ->
                         ListCarCard(
                             car = car,
                             currency = userProfile.preferredCurrency,
@@ -513,7 +531,7 @@ fun GridCarCard(
                 .align(Alignment.BottomCenter)
                 .clip(RoundedCornerShape(bottomStart = 20.dp, bottomEnd = 20.dp, topStart = 16.dp, topEnd = 16.dp))
         ) {
-            // Blurred duplicate car image layer behind text details
+            // Blurred duplicate car image layer behind text details (halka sa blur)
             AsyncImage(
                 model = coil.request.ImageRequest.Builder(context)
                     .data(cardImageUrl)
@@ -524,18 +542,18 @@ fun GridCarCard(
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .matchParentSize()
-                    .blur(20.dp)
+                    .blur(12.dp)
             )
 
-            // Frosted dark glass gradient backing with upper glass highlight
+            // Ultra-light translucent glass tint with top edge highlight
             Box(
                 modifier = Modifier
                     .matchParentSize()
                     .background(
                         brush = Brush.verticalGradient(
                             colors = listOf(
-                                Color(0xCC080C18),
-                                Color(0xF5050812)
+                                Color(0x2E000000), // 18% soft tint - car image completely visible
+                                Color(0x8C050812)  // 55% soft glass - keeps text super sharp
                             )
                         )
                     )
@@ -543,7 +561,7 @@ fun GridCarCard(
                         width = 1.dp,
                         brush = Brush.verticalGradient(
                             listOf(
-                                Color.White.copy(alpha = 0.35f),
+                                Color.White.copy(alpha = 0.30f),
                                 Color.White.copy(alpha = 0.05f)
                             )
                         ),
@@ -647,91 +665,184 @@ fun ListCarCard(
     onCompareToggle: () -> Unit,
     onClick: () -> Unit
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val cardImageUrl = car.images.firstOrNull()?.takeIf { it.isNotBlank() }
+        ?: "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1000&q=80"
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(120.dp)
-            .liquidGlass(
-                shape = RoundedCornerShape(20.dp),
-                backgroundColor = Color.White.copy(alpha = 0.08f)
-            )
+            .height(150.dp)
+            .clip(RoundedCornerShape(20.dp))
+            .border(1.dp, GlassBorderColor, RoundedCornerShape(20.dp))
             .clickable(onClick = onClick)
     ) {
-        Row(
-            modifier = Modifier.fillMaxSize(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Thumbnail
-            AsyncImage(
-                model = car.images.firstOrNull(),
-                contentDescription = car.fullName,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .width(130.dp)
-                    .height(120.dp)
-                    .clip(RoundedCornerShape(topStart = 20.dp, bottomStart = 20.dp))
-            )
+        // 1. Full-Card Car Exterior Image (Entire Card Background)
+        AsyncImage(
+            model = coil.request.ImageRequest.Builder(context)
+                .data(cardImageUrl)
+                .crossfade(true)
+                .setHeader("User-Agent", "Mozilla/5.0 (Linux; Android 14)")
+                .build(),
+            contentDescription = car.fullName,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize()
+        )
 
-            // Details
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(horizontal = 12.dp, vertical = 8.dp)
-            ) {
-                Text(
-                    text = "${car.year} • ${car.brand.uppercase()}",
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        color = ElectricBlueLight,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 10.sp
+        // 2. Top Subtle Protective Vignette & Badges
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(55.dp)
+                .align(Alignment.TopCenter)
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            Color.Black.copy(alpha = 0.65f),
+                            Color.Transparent
+                        )
                     )
                 )
+        )
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 8.dp)
+                .align(Alignment.TopCenter),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .background(Color.Black.copy(alpha = 0.60f))
+                    .padding(horizontal = 10.dp, vertical = 4.dp)
+            ) {
                 Text(
-                    text = car.model,
-                    style = MaterialTheme.typography.titleMedium.copy(
+                    text = "${car.year} • ${car.brand}",
+                    style = MaterialTheme.typography.labelSmall.copy(
                         fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    ),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    text = "${car.horsepower} HP • 0-100 ${car.acceleration0to100}s • ${car.fuelType}",
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        color = GlassTextMuted,
+                        color = Color.White,
                         fontSize = 11.sp
-                    ),
-                    maxLines = 1
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = currency.formatPrice(car.priceUsd),
-                    style = MaterialTheme.typography.titleSmall.copy(
-                        fontWeight = FontWeight.Black,
-                        color = Color.White
                     )
                 )
             }
-
-            // Quick actions
-            Column(
-                modifier = Modifier.padding(end = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                GlassIconButton(
-                    icon = if (isFavorite) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
-                    contentDescription = null,
-                    onClick = onFavoriteToggle,
-                    size = 36.dp,
-                    tint = if (isFavorite) NeonRed else Color.White
-                )
-
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 GlassIconButton(
                     icon = Icons.Default.CompareArrows,
-                    contentDescription = null,
+                    contentDescription = "Compare",
                     onClick = onCompareToggle,
-                    size = 36.dp,
-                    tint = if (isCompared) ElectricBlueLight else GlassTextMuted
+                    size = 32.dp,
+                    tint = if (isCompared) ElectricBlueLight else Color.White,
+                    backgroundColor = Color.Black.copy(alpha = 0.65f)
+                )
+                GlassIconButton(
+                    icon = if (isFavorite) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
+                    contentDescription = "Favorite",
+                    onClick = onFavoriteToggle,
+                    size = 32.dp,
+                    tint = if (isFavorite) NeonRed else Color.White,
+                    backgroundColor = Color.Black.copy(alpha = 0.65f)
+                )
+            }
+        }
+
+        // 3. Bottom Details Section with Blurred Car Image Background & Frosted Scrim
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.BottomCenter)
+                .clip(RoundedCornerShape(bottomStart = 20.dp, bottomEnd = 20.dp, topStart = 16.dp, topEnd = 16.dp))
+        ) {
+            // Blurred duplicate car image layer behind text details (halka sa blur)
+            AsyncImage(
+                model = coil.request.ImageRequest.Builder(context)
+                    .data(cardImageUrl)
+                    .crossfade(false)
+                    .setHeader("User-Agent", "Mozilla/5.0 (Linux; Android 14)")
+                    .build(),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .matchParentSize()
+                    .blur(12.dp)
+            )
+
+            // Ultra-light translucent glass tint
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                Color(0x2E000000), // 18% soft tint - car image completely visible
+                                Color(0x8C050812)  // 55% soft glass - keeps text super sharp
+                            )
+                        )
+                    )
+                    .border(
+                        width = 1.dp,
+                        brush = Brush.verticalGradient(
+                            listOf(
+                                Color.White.copy(alpha = 0.30f),
+                                Color.White.copy(alpha = 0.05f)
+                            )
+                        ),
+                        shape = RoundedCornerShape(bottomStart = 20.dp, bottomEnd = 20.dp, topStart = 16.dp, topEnd = 16.dp)
+                    )
+            )
+
+            // High Contrast Text & Spec Content
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = car.model,
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            shadow = Shadow(
+                                color = Color.Black.copy(alpha = 0.95f),
+                                offset = Offset(0f, 1f),
+                                blurRadius = 5f
+                            )
+                        ),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = "${car.horsepower} HP • 0-100 ${car.acceleration0to100}s • ${car.fuelType}",
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            color = Color.White.copy(alpha = 0.90f),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium,
+                            shadow = Shadow(
+                                color = Color.Black.copy(alpha = 0.85f),
+                                offset = Offset(0f, 1f),
+                                blurRadius = 3f
+                            )
+                        ),
+                        maxLines = 1
+                    )
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = currency.formatPrice(car.priceUsd),
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Black,
+                        color = Color.White,
+                        shadow = Shadow(
+                            color = Color.Black.copy(alpha = 0.95f),
+                            offset = Offset(0f, 1f),
+                            blurRadius = 5f
+                        )
+                    )
                 )
             }
         }

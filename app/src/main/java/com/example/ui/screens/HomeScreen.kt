@@ -635,7 +635,7 @@ fun HeroFeaturedCard(
                 .align(Alignment.BottomCenter)
                 .clip(RoundedCornerShape(bottomStart = 26.dp, bottomEnd = 26.dp, topStart = 20.dp, topEnd = 20.dp))
         ) {
-            // Blurred duplicate car image layer behind text details
+            // Blurred duplicate car image layer behind text details (halka sa blur)
             AsyncImage(
                 model = coil.request.ImageRequest.Builder(context)
                     .data(heroImageUrl)
@@ -646,18 +646,18 @@ fun HeroFeaturedCard(
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .matchParentSize()
-                    .blur(22.dp)
+                    .blur(12.dp)
             )
 
-            // Frosted dark glass gradient backing with upper glass highlight
+            // Ultra-light translucent glass tint with top edge highlight
             Box(
                 modifier = Modifier
                     .matchParentSize()
                     .background(
                         brush = Brush.verticalGradient(
                             colors = listOf(
-                                Color(0xCC080C18),
-                                Color(0xF5050812)
+                                Color(0x2E000000), // 18% soft tint - car image completely visible
+                                Color(0x8C050812)  // 55% soft glass - keeps text super sharp
                             )
                         )
                     )
@@ -665,8 +665,8 @@ fun HeroFeaturedCard(
                         width = 1.dp,
                         brush = Brush.verticalGradient(
                             listOf(
-                                Color.White.copy(alpha = 0.35f),
-                                Color.White.copy(alpha = 0.06f)
+                                Color.White.copy(alpha = 0.30f),
+                                Color.White.copy(alpha = 0.05f)
                             )
                         ),
                         shape = RoundedCornerShape(bottomStart = 26.dp, bottomEnd = 26.dp, topStart = 20.dp, topEnd = 20.dp)
@@ -850,7 +850,7 @@ fun CompactCarCard(
                 .align(Alignment.BottomCenter)
                 .clip(RoundedCornerShape(bottomStart = 22.dp, bottomEnd = 22.dp, topStart = 16.dp, topEnd = 16.dp))
         ) {
-            // Blurred duplicate car image layer behind text details
+            // Blurred duplicate car image layer behind text details (halka sa blur)
             AsyncImage(
                 model = coil.request.ImageRequest.Builder(context)
                     .data(cardImageUrl)
@@ -861,18 +861,18 @@ fun CompactCarCard(
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .matchParentSize()
-                    .blur(20.dp)
+                    .blur(12.dp)
             )
 
-            // Frosted dark glass gradient backing with upper glass highlight
+            // Ultra-light translucent glass tint with top edge highlight
             Box(
                 modifier = Modifier
                     .matchParentSize()
                     .background(
                         brush = Brush.verticalGradient(
                             colors = listOf(
-                                Color(0xCC080C18),
-                                Color(0xF5050812)
+                                Color(0x2E000000), // 18% soft tint - car image completely visible
+                                Color(0x8C050812)  // 55% soft glass - keeps text super sharp
                             )
                         )
                     )
@@ -880,7 +880,7 @@ fun CompactCarCard(
                         width = 1.dp,
                         brush = Brush.verticalGradient(
                             listOf(
-                                Color.White.copy(alpha = 0.35f),
+                                Color.White.copy(alpha = 0.30f),
                                 Color.White.copy(alpha = 0.05f)
                             )
                         ),

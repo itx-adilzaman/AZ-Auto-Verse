@@ -53,10 +53,10 @@ class CarRepository(
     private val _neonStatus = MutableStateFlow("Connecting to Neon PostgreSQL...")
     val neonStatus: StateFlow<String> = _neonStatus.asStateFlow()
 
-    private val _cars = MutableStateFlow<List<Car>>(emptyList())
+    private val _cars = MutableStateFlow<List<Car>>(SeedCarsData.cars + SeedCarsExtended.additionalCars)
     val cars: StateFlow<List<Car>> = _cars.asStateFlow()
 
-    private val _brands = MutableStateFlow<List<Brand>>(emptyList())
+    private val _brands = MutableStateFlow<List<Brand>>(SeedCarsData.brands)
     val brands: StateFlow<List<Brand>> = _brands.asStateFlow()
 
     private val _reviews = MutableStateFlow<List<Review>>(emptyList())
@@ -72,9 +72,9 @@ class CarRepository(
             location = "Islamabad & London",
             dreamCar = "Ferrari SF90 Stradale",
             avatarUrl = ADIL_FACE_AVATAR,
-            favoriteCarIds = setOf("ferrari-sf90", "porsche-gt3rs"),
-            compareCarIds = listOf("ferrari-sf90", "lambo-revuelto"),
-            recentlyViewedCarIds = listOf("ferrari-sf90", "porsche-gt3rs")
+            favoriteCarIds = emptySet(),
+            compareCarIds = emptyList(),
+            recentlyViewedCarIds = emptyList()
         )
     )
     val userProfile: StateFlow<UserProfile> = _userProfile.asStateFlow()
@@ -141,10 +141,14 @@ class CarRepository(
 
             if (userDao != null) {
                 try {
-                    val existing = userDao.getUserById(_userProfile.value.id)
+                    val sessionEmail = sessionManager?.userEmail ?: _userProfile.value.email
+                    val existing = userDao.getUserByEmail(sessionEmail)
+                        ?: userDao.getUserById(_userProfile.value.id)
                         ?: userDao.getAllUsers().firstOrNull()
                     if (existing != null) {
-                        _userProfile.value = existing.toUserProfile()
+                        val loaded = existing.toUserProfile()
+                        val cleanCompare = if (loaded.compareCarIds == listOf("ferrari-sf90", "lambo-revuelto")) emptyList() else loaded.compareCarIds
+                        _userProfile.value = loaded.copy(compareCarIds = cleanCompare)
                     }
                 } catch (e: Exception) {
                     Log.e(TAG, "UserDao initialization error", e)
@@ -745,8 +749,9 @@ class CarRepository(
         }
     }
 
-    fun filterCars(filter: CarFilter): List<Car> {
-        return _cars.value.filter { car ->
+    fun filterCars(carList: List<Car> = _cars.value, filter: CarFilter): List<Car> {
+        val source = if (carList.isNotEmpty()) carList else (SeedCarsData.cars + SeedCarsExtended.additionalCars)
+        return source.filter { car ->
             val matchesQuery = filter.query.isBlank() ||
                 car.brand.contains(filter.query, ignoreCase = true) ||
                 car.model.contains(filter.query, ignoreCase = true) ||

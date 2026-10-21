@@ -59,9 +59,13 @@ class AutoVerseViewModel(
     val filteredCars: StateFlow<List<Car>> = combine(
         cars,
         _carFilter
-    ) { _, filter ->
-        repository.filterCars(filter)
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    ) { carList, filter ->
+        repository.filterCars(carList, filter)
+    }.stateIn(
+        viewModelScope,
+        SharingStarted.Eagerly,
+        com.example.data.SeedCarsData.cars + com.example.data.SeedCarsExtended.additionalCars
+    )
 
     // UI Feedback message (e.g. "Added to compare", "Saved to Dream Garage")
     private val _snackBarMessage = MutableStateFlow<String?>(null)

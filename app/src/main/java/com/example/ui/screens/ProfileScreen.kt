@@ -146,8 +146,11 @@ fun ProfileScreen(
                                 .padding(24.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            val adilAvatarUrl = "https://res.cloudinary.com/dkdzuyjc4/image/upload/c_thumb,g_face,w_600,h_600,z_0.75/v1792432515/1784644774412_nsmlyh.jpg"
-                            val adilName = "Muhammad Adil Zaman"
+                            val displayAvatar = userProfile.avatarUrl.ifBlank {
+                                "https://res.cloudinary.com/dkdzuyjc4/image/upload/c_thumb,g_face,w_600,h_600,z_0.75/v1792432515/1784644774412_nsmlyh.jpg"
+                            }
+                            val displayName = userProfile.name.ifBlank { "AutoVerse Enthusiast" }
+                            val displayEmail = userProfile.email.ifBlank { "user@autoverse.io" }
 
                             Box(
                                 modifier = Modifier
@@ -171,11 +174,11 @@ fun ProfileScreen(
                                 val avatarContext = androidx.compose.ui.platform.LocalContext.current
                                 AsyncImage(
                                     model = coil.request.ImageRequest.Builder(avatarContext)
-                                        .data(adilAvatarUrl)
+                                        .data(displayAvatar)
                                         .crossfade(true)
                                         .setHeader("User-Agent", "Mozilla/5.0 (Linux; Android 14)")
                                         .build(),
-                                    contentDescription = adilName,
+                                    contentDescription = displayName,
                                     contentScale = ContentScale.Crop,
                                     alignment = Alignment.TopCenter,
                                     modifier = Modifier
@@ -187,7 +190,7 @@ fun ProfileScreen(
                             Spacer(modifier = Modifier.height(14.dp))
 
                             Text(
-                                text = adilName,
+                                text = displayName,
                                 style = MaterialTheme.typography.titleLarge.copy(
                                     fontWeight = FontWeight.ExtraBold,
                                     letterSpacing = 0.5.sp,
@@ -198,14 +201,14 @@ fun ProfileScreen(
                             Spacer(modifier = Modifier.height(4.dp))
 
                             Text(
-                                text = "malikmuhammadadilzaman@gmail.com",
+                                text = displayEmail,
                                 style = MaterialTheme.typography.bodyMedium.copy(color = GlassTextSecondary)
                             )
 
                             Spacer(modifier = Modifier.height(10.dp))
 
                             Text(
-                                text = if (userProfile.bio.isNotBlank()) "\"${userProfile.bio}\"" else "“Creator & Full-Stack Architect of AutoVerse Supercar Platform”",
+                                text = if (userProfile.bio.isNotBlank()) "\"${userProfile.bio}\"" else "“Supercar connoisseur & active driver on AutoVerse”",
                                 style = MaterialTheme.typography.bodySmall.copy(
                                     color = ElectricBlueLight,
                                     fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
