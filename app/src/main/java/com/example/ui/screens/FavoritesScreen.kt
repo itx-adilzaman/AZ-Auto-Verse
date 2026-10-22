@@ -265,7 +265,7 @@ fun FavoritesScreen(
                                                 .padding(horizontal = 12.dp, vertical = 8.dp)
                                         ) {
                                             Text(
-                                                text = "${car.year} • ${car.brand.uppercase()}",
+                                                text = car.brand.uppercase(),
                                                 style = MaterialTheme.typography.labelSmall.copy(
                                                     color = ElectricBlueLight,
                                                     fontSize = 10.sp,
@@ -280,10 +280,6 @@ fun FavoritesScreen(
                                                 ),
                                                 maxLines = 1,
                                                 overflow = TextOverflow.Ellipsis
-                                            )
-                                            Text(
-                                                text = "${car.horsepower} HP • ${car.topSpeedKmh} km/h",
-                                                style = MaterialTheme.typography.bodySmall.copy(color = GlassTextMuted)
                                             )
                                             Spacer(modifier = Modifier.height(4.dp))
                                             Text(

@@ -509,6 +509,26 @@ fun GridCarCard(
                 )
         )
 
+        // Brand pill on top corner
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(8.dp)
+                .clip(CircleShape)
+                .background(Color.Black.copy(alpha = 0.60f))
+                .border(1.dp, Color.White.copy(alpha = 0.15f), CircleShape)
+                .padding(horizontal = 10.dp, vertical = 4.dp)
+        ) {
+            Text(
+                text = car.brand.uppercase(),
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    fontSize = 10.sp
+                )
+            )
+        }
+
         Box(
             modifier = Modifier
                 .align(Alignment.TopEnd)
@@ -569,25 +589,14 @@ fun GridCarCard(
                     )
             )
 
-            // High Contrast Text & Spec Content
-            Column(
+            // High Contrast Text: Only Car Name on start, Price directly opposite
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(12.dp)
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = car.brand.uppercase(),
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        fontSize = 10.sp,
-                        color = ElectricBlueLight,
-                        fontWeight = FontWeight.Bold,
-                        shadow = Shadow(
-                            color = Color.Black.copy(alpha = 0.85f),
-                            offset = Offset(0f, 1f),
-                            blurRadius = 4f
-                        )
-                    )
-                )
                 Text(
                     text = car.model,
                     style = MaterialTheme.typography.titleSmall.copy(
@@ -600,56 +609,24 @@ fun GridCarCard(
                         )
                     ),
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false)
                 )
 
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.width(8.dp))
 
                 Text(
-                    text = "${car.horsepower} HP • ${car.topSpeedKmh} km/h",
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        color = Color.White.copy(alpha = 0.90f),
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Medium,
+                    text = currency.formatPrice(car.priceUsd),
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontWeight = FontWeight.Black,
+                        color = Color.White,
                         shadow = Shadow(
-                            color = Color.Black.copy(alpha = 0.85f),
+                            color = Color.Black.copy(alpha = 0.95f),
                             offset = Offset(0f, 1f),
-                            blurRadius = 3f
+                            blurRadius = 5f
                         )
                     )
                 )
-
-                Spacer(modifier = Modifier.height(6.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = currency.formatPrice(car.priceUsd),
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            fontWeight = FontWeight.Black,
-                            color = Color.White
-                        )
-                    )
-
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(ElectricBlue.copy(alpha = 0.20f))
-                            .padding(horizontal = 8.dp, vertical = 2.dp)
-                    ) {
-                        Text(
-                            text = car.drivetrain,
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                fontSize = 9.sp,
-                                color = ElectricBlueLight,
-                                fontWeight = FontWeight.Bold
-                            )
-                        )
-                    }
-                }
             }
         }
     }
@@ -717,10 +694,11 @@ fun ListCarCard(
                 modifier = Modifier
                     .clip(CircleShape)
                     .background(Color.Black.copy(alpha = 0.60f))
+                    .border(1.dp, Color.White.copy(alpha = 0.15f), CircleShape)
                     .padding(horizontal = 10.dp, vertical = 4.dp)
             ) {
                 Text(
-                    text = "${car.year} • ${car.brand}",
+                    text = car.brand.uppercase(),
                     style = MaterialTheme.typography.labelSmall.copy(
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
@@ -793,7 +771,7 @@ fun ListCarCard(
                     )
             )
 
-            // High Contrast Text & Spec Content
+            // High Contrast Text: Only Car Name and Price directly opposite
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -801,37 +779,24 @@ fun ListCarCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = car.model,
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White,
-                            shadow = Shadow(
-                                color = Color.Black.copy(alpha = 0.95f),
-                                offset = Offset(0f, 1f),
-                                blurRadius = 5f
-                            )
-                        ),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = "${car.horsepower} HP • 0-100 ${car.acceleration0to100}s • ${car.fuelType}",
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            color = Color.White.copy(alpha = 0.90f),
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Medium,
-                            shadow = Shadow(
-                                color = Color.Black.copy(alpha = 0.85f),
-                                offset = Offset(0f, 1f),
-                                blurRadius = 3f
-                            )
-                        ),
-                        maxLines = 1
-                    )
-                }
+                Text(
+                    text = car.model,
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        shadow = Shadow(
+                            color = Color.Black.copy(alpha = 0.95f),
+                            offset = Offset(0f, 1f),
+                            blurRadius = 5f
+                        )
+                    ),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false)
+                )
+
                 Spacer(modifier = Modifier.width(12.dp))
+
                 Text(
                     text = currency.formatPrice(car.priceUsd),
                     style = MaterialTheme.typography.titleMedium.copy(

@@ -595,11 +595,13 @@ fun HeroFeaturedCard(
         ) {
             Box(
                 modifier = Modifier
-                    .liquidGlass(shape = CircleShape, backgroundColor = Color.Black.copy(alpha = 0.60f))
+                    .clip(CircleShape)
+                    .background(Color.Black.copy(alpha = 0.60f))
+                    .border(1.dp, Color.White.copy(alpha = 0.15f), CircleShape)
                     .padding(horizontal = 12.dp, vertical = 6.dp)
             ) {
                 Text(
-                    text = "${car.year} • ${car.brand}",
+                    text = car.brand.uppercase(),
                     style = MaterialTheme.typography.labelSmall.copy(
                         fontWeight = FontWeight.Bold,
                         color = Color.White
@@ -673,86 +675,44 @@ fun HeroFeaturedCard(
                     )
             )
 
-            // High Contrast Details & Specs Content
-            Column(
+            // High Contrast Details: Only Car Name on start, Price directly opposite
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 14.dp)
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = car.model,
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                fontWeight = FontWeight.ExtraBold,
-                                color = Color.White,
-                                shadow = Shadow(
-                                    color = Color.Black.copy(alpha = 0.9f),
-                                    offset = Offset(0f, 2f),
-                                    blurRadius = 6f
-                                )
-                            ),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                Text(
+                    text = car.model,
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color.White,
+                        shadow = Shadow(
+                            color = Color.Black.copy(alpha = 0.9f),
+                            offset = Offset(0f, 2f),
+                            blurRadius = 6f
                         )
-                        if (car.variant.isNotBlank()) {
-                            Text(
-                                text = car.variant,
-                                style = MaterialTheme.typography.bodySmall.copy(
-                                    color = NeonCyan,
-                                    fontWeight = FontWeight.SemiBold,
-                                    fontSize = 11.sp,
-                                    shadow = Shadow(
-                                        color = Color.Black.copy(alpha = 0.8f),
-                                        offset = Offset(0f, 1f),
-                                        blurRadius = 4f
-                                    )
-                                ),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                    }
+                    ),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false)
+                )
 
-                    // Price Tag Badge
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(ElectricBlue.copy(alpha = 0.25f))
-                            .border(1.dp, ElectricBlue.copy(alpha = 0.55f), RoundedCornerShape(12.dp))
-                            .padding(horizontal = 10.dp, vertical = 5.dp)
-                    ) {
-                        Text(
-                            text = currency.formatPrice(car.priceUsd),
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                fontWeight = FontWeight.Black,
-                                color = Color.White
-                            )
+                Spacer(modifier = Modifier.width(10.dp))
+
+                Text(
+                    text = currency.formatPrice(car.priceUsd),
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Black,
+                        color = Color.White,
+                        shadow = Shadow(
+                            color = Color.Black.copy(alpha = 0.9f),
+                            offset = Offset(0f, 2f),
+                            blurRadius = 6f
                         )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                // Specs pill row with dark glass backing
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color.Black.copy(alpha = 0.45f))
-                        .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(12.dp))
-                        .padding(horizontal = 12.dp, vertical = 7.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    SpecMicro(label = "0-100", value = "${car.acceleration0to100}s")
-                    SpecMicro(label = "POWER", value = "${car.horsepower} HP")
-                    SpecMicro(label = "TOP SPEED", value = "${car.topSpeedKmh} km/h")
-                    SpecMicro(label = "DRIVE", value = car.drivetrain)
-                }
+                    )
+                )
             }
         }
     }
@@ -828,6 +788,26 @@ fun CompactCarCard(
                 )
         )
 
+        // Top Brand Pill
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(8.dp)
+                .clip(CircleShape)
+                .background(Color.Black.copy(alpha = 0.60f))
+                .border(1.dp, Color.White.copy(alpha = 0.15f), CircleShape)
+                .padding(horizontal = 10.dp, vertical = 4.dp)
+        ) {
+            Text(
+                text = car.brand.uppercase(),
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    fontSize = 10.sp
+                )
+            )
+        }
+
         Box(
             modifier = Modifier
                 .align(Alignment.TopEnd)
@@ -888,25 +868,14 @@ fun CompactCarCard(
                     )
             )
 
-            // High Contrast Details
-            Column(
+            // High Contrast Text: Only Car Name on start, Price directly opposite
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(12.dp)
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = car.brand.uppercase(),
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        fontSize = 10.sp,
-                        color = NeonCyan,
-                        fontWeight = FontWeight.Bold,
-                        shadow = Shadow(
-                            color = Color.Black.copy(alpha = 0.8f),
-                            offset = Offset(0f, 1f),
-                            blurRadius = 4f
-                        )
-                    )
-                )
                 Text(
                     text = car.model,
                     style = MaterialTheme.typography.titleSmall.copy(
@@ -919,37 +888,24 @@ fun CompactCarCard(
                         )
                     ),
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false)
                 )
 
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.width(6.dp))
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "${car.horsepower} HP • ${car.acceleration0to100}s",
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            color = Color.White.copy(alpha = 0.85f),
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Medium,
-                            shadow = Shadow(
-                                color = Color.Black.copy(alpha = 0.8f),
-                                offset = Offset(0f, 1f),
-                                blurRadius = 3f
-                            )
+                Text(
+                    text = currency.formatPrice(car.priceUsd),
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color.White,
+                        shadow = Shadow(
+                            color = Color.Black.copy(alpha = 0.9f),
+                            offset = Offset(0f, 1f),
+                            blurRadius = 4f
                         )
                     )
-                    Text(
-                        text = currency.formatPrice(car.priceUsd),
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            fontWeight = FontWeight.ExtraBold,
-                            color = Color.White
-                        )
-                    )
-                }
+                )
             }
         }
     }
